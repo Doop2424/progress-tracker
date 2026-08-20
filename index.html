@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<script>
+(function(){
+  var p="system";
+  try{ p=localStorage.getItem("pt-theme")||"system"; }catch(e){}
+  var dark=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme=dark?"dark":"light";
+  window.__themePref=p;
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>진행현황 관리대장</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+:root{
+  color-scheme:light;
+  --ink:#111C2B; --ink2:#3A4A5F; --muted:#7A8A9E;
+  --paper:#FFFFFF; --bg:#E9EDF2; --rule:#D3DBE4; --rule2:#E7ECF2; --hover:#F7F9FB;
+  --brand:#1B4B7A; --brand-hover:#16406A; --brand-soft:#E4EDF6; --on-brand:#FFFFFF;
+  --todo:#8A98A8; --doing:#B96C15; --done:#26714E; --danger:#B3402F;
+  --todo-bg:#F2F4F7; --todo-bd:#DCE2E9;
+  --doing-bg:#FBF2E6; --doing-bd:#EFD9BC;
+  --done-bg:#EAF5EF; --done-bd:#BFDCCD;
+  --late-bg:#FDECE9; --late-bd:#F0C9C1;
+  --toast-bg:#111C2B; --toast-fg:#FFFFFF;
+  --r:6px; --mono:"SF Mono",ui-monospace,"Menlo","Consolas",monospace;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ink:#E7EDF4; --ink2:#B7C3D1; --muted:#7B8B9D;
+  --paper:#1A222C; --bg:#10161E; --rule:#2B3644; --rule2:#232D39; --hover:#212B37;
+  --brand:#68AAE8; --brand-hover:#83BAEE; --brand-soft:#1C2F44; --on-brand:#0E1620;
+  --todo:#8494A5; --doing:#DFA05A; --done:#54B58C; --danger:#E0705E;
+  --todo-bg:#222C38; --todo-bd:#303C4A;
+  --doing-bg:#332819; --doing-bd:#4B3A22;
+  --done-bg:#17322A; --done-bd:#234A3B;
+  --late-bg:#3A2020; --late-bd:#57302C;
+  --toast-bg:#E7EDF4; --toast-fg:#101820;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg); color:var(--ink);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.hide{display:none !important}
+
+.btn{border:1px solid var(--rule); background:var(--paper); color:var(--ink2); padding:7px 13px;
+  border-radius:var(--r); font-size:13px; font-weight:600; transition:border-color .12s,background .12s}
+.btn:hover{border-color:var(--brand); color:var(--brand)}
+.btn:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+.btn.primary{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
+.btn.primary:hover{background:var(--brand-hover); border-color:var(--brand-hover); color:var(--on-brand)}
+.btn.ghost{border-color:transparent; background:transparent; color:var(--muted); padding:5px 8px}
+.btn.ghost:hover{color:var(--danger)}
+.btn.sm{padding:4px 9px; font-size:12px}
+.fld{width:100%; border:1px solid var(--rule); background:var(--paper); padding:7px 9px; border-radius:var(--r); font-size:13px}
+.fld:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft)}
+.lbl{display:block; font-size:11px; font-weight:700; letter-spacing:.06em; color:var(--muted); margin-bottom:5px}
+
+#gate{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px}
+.gate-card{width:100%; max-width:360px; background:var(--paper); border:1px solid var(--rule); border-radius:10px; padding:28px}
+.gate-card h1{font-size:19px; margin:0 0 4px} .gate-card p{margin:0 0 22px; color:var(--muted); font-size:12.5px}
+.gate-card .row{margin-bottom:12px}
+#gateErr{color:var(--danger); font-size:12.5px; min-height:18px; margin-top:10px}
+
+header{background:var(--paper); border-bottom:1px solid var(--rule); position:sticky; top:0; z-index:30}
+.hbar{max-width:1460px; margin:0 auto; padding:0 22px; display:flex; align-items:center; gap:16px; height:56px}
+.brand{display:flex; flex-direction:column; line-height:1.15}
+.brand .eyebrow{font-family:var(--mono); font-size:9.5px; letter-spacing:.18em; color:var(--muted)}
+.brand .name{font-size:15px; font-weight:800}
+nav{display:flex; gap:2px; margin-left:auto}
+.tab{border:none; background:transparent; padding:8px 13px; border-radius:var(--r); font-size:13px; font-weight:600; color:var(--muted)}
+.tab:hover{color:var(--ink2); background:var(--bg)}
+.tab.on{color:var(--brand); background:var(--brand-soft)}
+.who{font-size:11.5px; color:var(--muted); padding-left:14px; border-left:1px solid var(--rule); display:flex; align-items:center; gap:10px}
+main{max-width:1460px; margin:0 auto; padding:22px 22px 90px}
+
+.seg{display:inline-flex; gap:2px; padding:2px; border:1px solid var(--rule); border-radius:20px; background:var(--bg)}
+.seg button{border:none; background:transparent; border-radius:16px; padding:4px 12px; font-size:12px; font-weight:700; color:var(--muted)}
+.seg button:hover{color:var(--ink2)}
+.seg button.on{background:var(--paper); color:var(--ink)}
+
+.view-head{display:flex; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap}
+.view-head h2{font-size:17px; margin:0}
+.view-head .sub{font-size:12.5px; color:var(--muted)}
+.view-head .sp{margin-left:auto; display:flex; gap:8px; align-items:center}
+.card{background:var(--paper); border:1px solid var(--rule); border-radius:9px}
+.card-h{padding:12px 16px; border-bottom:1px solid var(--rule2); display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.card-h h3{margin:0; font-size:13.5px; font-weight:700}
+.card-b{padding:16px}
+.empty{padding:38px 20px; text-align:center; color:var(--muted); font-size:13px}
+.empty strong{display:block; color:var(--ink2); font-size:14px; margin-bottom:5px}
+
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px}
+.stat{background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:14px 16px}
+.stat .k{font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--muted)}
+.stat .v{font-size:26px; font-weight:800; letter-spacing:-.02em; margin-top:3px}
+.stat .v small{font-size:13px; font-weight:600; color:var(--muted); margin-left:2px}
+
+.strip{display:flex; gap:2px; height:9px; border-radius:3px; overflow:hidden; background:var(--rule2)}
+.strip i{flex:1 1 0; min-width:3px; display:block; background:var(--todo)}
+.strip i.doing{background:var(--doing)} .strip i.done{background:var(--done)} .strip i.late{background:var(--danger)}
+
+.load{display:grid; grid-template-columns:92px 1fr 80px; gap:10px; align-items:center; padding:5px 0}
+.load .nm{font-size:12.5px; font-weight:600; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.load .bar{height:16px; border-radius:4px; background:var(--rule2); overflow:hidden; display:flex}
+.load .bar i{display:block; height:100%; background:var(--doing)}
+.load .bar i.late{background:var(--danger)}
+.load .n{font-family:var(--mono); font-size:11.5px; color:var(--muted)}
+.load .n b{color:var(--ink2)}
+
+.co-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:12px}
+.co-card{background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:16px; text-align:left; width:100%; display:block}
+.co-card:hover{border-color:var(--brand)}
+.co-card .top{display:flex; align-items:center; gap:8px; margin-bottom:3px}
+.co-card .nm{font-size:15px; font-weight:700}
+.co-card .pct{margin-left:auto; font-family:var(--mono); font-size:15px; font-weight:700; color:var(--brand)}
+.co-card .meta{font-size:11.5px; color:var(--muted); margin-bottom:10px}
+.co-card .counts{display:flex; gap:12px; margin-top:10px; font-size:11.5px; color:var(--muted)}
+.co-card .counts b{color:var(--ink2)}
+.runs{margin-top:11px; padding-top:10px; border-top:1px dashed var(--rule); display:flex; flex-direction:column; gap:5px}
+.run{display:flex; align-items:center; gap:7px; font-size:12.5px; background:var(--doing-bg); border:1px solid var(--doing-bd); border-radius:5px; padding:4px 8px}
+.run.late{background:var(--late-bg); border-color:var(--late-bd)}
+.run .t{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink)}
+.run .o{font-size:11px; color:var(--muted); flex:none}
+.run .d{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--doing); flex:none}
+.run.late .d{color:var(--danger)}
+.run-none{font-size:12.5px; color:var(--muted); padding:4px 0}
+
+.tag{display:inline-block; padding:1px 7px; border-radius:20px; font-size:10.5px; font-weight:700}
+.tag.late{color:var(--danger); background:var(--late-bg); border:1px solid var(--late-bd)}
+.tag.stale{color:var(--doing); background:var(--doing-bg); border:1px solid var(--doing-bd)}
+.tag.tpl{color:var(--brand); background:var(--brand-soft); border:1px solid var(--brand-soft)}
+
+.tbl-wrap{overflow:auto}
+table{width:100%; border-collapse:collapse}
+th{text-align:left; font-size:11px; font-weight:700; letter-spacing:.05em; color:var(--muted);
+   padding:9px 8px; border-bottom:1px solid var(--rule); white-space:nowrap; background:var(--paper)}
+td{padding:5px 8px; border-bottom:1px solid var(--rule2); vertical-align:middle}
+tbody tr:hover{background:var(--hover)}
+tbody tr.sel{background:var(--brand-soft)}
+td.num{font-family:var(--mono); font-size:11.5px; color:var(--muted); width:36px}
+td.co{font-weight:600; white-space:nowrap; font-size:12.5px}
+.sub2{font-size:11px; color:var(--muted); font-weight:500}
+.mono{font-family:var(--mono); font-size:12px}
+.cell-in{border:1px solid transparent; background:transparent; padding:5px 6px; border-radius:5px; width:100%; font-size:13px}
+.cell-in:hover{border-color:var(--rule2)}
+.cell-in:focus{outline:none; border-color:var(--brand); background:var(--paper); box-shadow:0 0 0 3px var(--brand-soft)}
+input[type=date].cell-in{font-family:var(--mono); font-size:11.5px; padding:4px 4px}
+select.st{border:1px solid var(--rule); border-radius:20px; padding:3px 6px; font-size:11.5px; font-weight:700; appearance:none; text-align:center; min-width:70px}
+select.st.todo{color:var(--todo); border-color:var(--todo-bd); background:var(--todo-bg)}
+select.st.doing{color:var(--doing); border-color:var(--doing-bd); background:var(--doing-bg)}
+select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--done-bg)}
+.badge{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11.5px; font-weight:700}
+.badge.todo{color:var(--todo); background:var(--todo-bg)}
+.badge.doing{color:var(--doing); background:var(--doing-bg)}
+.badge.done{color:var(--done); background:var(--done-bg)}
+.dd{font-family:var(--mono); font-size:11.5px; font-weight:700}
+.dd.late{color:var(--danger)} .dd.soon{color:var(--doing)} .dd.far{color:var(--muted)}
+
+/* 담당자 복수 */
+.own{border:1px solid var(--rule2); background:transparent; border-radius:5px; padding:4px 8px; font-size:12px;
+  width:100%; text-align:left; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.own:hover{border-color:var(--brand); color:var(--brand)}
+.own.none{color:var(--muted)}
+#ownPop{position:fixed; z-index:80; background:var(--paper); border:1px solid var(--rule); border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.16); padding:8px; min-width:170px; max-height:260px; overflow-y:auto}
+#ownPop label{display:flex; align-items:center; gap:8px; padding:5px 7px; border-radius:5px; font-size:13px; cursor:pointer}
+#ownPop label:hover{background:var(--hover)}
+#ownPop .none{font-size:11.5px; color:var(--muted); padding:8px}
+
+/* 일괄 편집 바 */
+#bulk{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:55;
+  background:var(--paper); border:1px solid var(--brand); border-radius:30px; padding:8px 12px;
+  display:flex; align-items:center; gap:8px; box-shadow:0 8px 26px rgba(0,0,0,.18); flex-wrap:wrap; max-width:94vw}
+#bulk .cntx{font-size:12.5px; font-weight:700; color:var(--brand); padding:0 6px}
+#bulk select,#bulk input{border:1px solid var(--rule); border-radius:16px; padding:5px 9px; font-size:12px; background:var(--paper)}
+
+.filters{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; padding:14px 16px; border-bottom:1px solid var(--rule2)}
+.filters .f{min-width:132px}
+.chips{display:flex; gap:5px}
+.chip{border:1px solid var(--rule); background:var(--paper); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:600; color:var(--muted)}
+.chip.on{border-color:var(--brand); background:var(--brand-soft); color:var(--brand)}
+.chip.on.red{border-color:var(--late-bd); background:var(--late-bg); color:var(--danger)}
+
+.mx{border-collapse:separate; border-spacing:0; width:auto; min-width:100%}
+.mx th.cx{position:sticky; left:0; z-index:5; background:var(--paper); border-right:1px solid var(--rule); min-width:172px}
+.mx td.cx{position:sticky; left:0; z-index:4; background:var(--paper); border-right:1px solid var(--rule); font-weight:600; white-space:nowrap}
+.mx tbody tr:hover td.cx{background:var(--hover)}
+.mx th{vertical-align:bottom; font-size:10.5px; max-width:80px; white-space:normal; line-height:1.3; text-align:center}
+.mx td.cell{text-align:center; padding:4px 3px}
+.mx .dot{display:inline-flex; align-items:center; justify-content:center; width:100%; min-width:34px; height:24px;
+  border-radius:5px; font-size:10.5px; font-weight:700; border:1px solid transparent}
+.dot.todo{background:var(--todo-bg); border-color:var(--todo-bd); color:var(--todo)}
+.dot.doing{background:var(--doing-bg); border-color:var(--doing-bd); color:var(--doing)}
+.dot.done{background:var(--done-bg); border-color:var(--done-bd); color:var(--done)}
+.dot.late{background:var(--late-bg); border-color:var(--late-bd); color:var(--danger)}
+.dot.na{color:var(--rule); font-weight:400}
+
+.gantt{overflow-x:auto; padding-bottom:6px}
+.gt-row{display:flex; align-items:stretch; border-bottom:1px solid var(--rule2)}
+.gt-name{position:sticky; left:0; z-index:6; background:var(--paper); border-right:1px solid var(--rule);
+  width:178px; min-width:178px; padding:8px 12px; font-size:12.5px; font-weight:600; display:flex; flex-direction:column; justify-content:center}
+.gt-name .sub2{font-weight:500}
+.gt-track{position:relative; flex:1}
+.gt-head{border-bottom:1px solid var(--rule)}
+.gt-head .gt-name{font-size:11px; color:var(--muted); font-weight:700}
+.gt-head .gt-track{height:26px}
+.gt-tick{position:absolute; top:0; bottom:0; border-left:1px solid var(--rule2)}
+.gt-tick span{position:absolute; top:5px; left:4px; font-family:var(--mono); font-size:9.5px; color:var(--muted); white-space:nowrap}
+.gt-today{position:absolute; top:0; bottom:0; width:2px; background:var(--danger); opacity:.55; z-index:3}
+.gt-bar{position:absolute; height:20px; border-radius:4px; padding:0 6px; font-size:11px; font-weight:600;
+  display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; border:1px solid; z-index:2}
+.gt-bar.todo{background:var(--todo-bg); border-color:var(--todo-bd); color:var(--ink2)}
+.gt-bar.doing{background:var(--doing-bg); border-color:var(--doing-bd); color:var(--doing)}
+.gt-bar.done{background:var(--done-bg); border-color:var(--done-bd); color:var(--done)}
+.gt-bar.late{background:var(--late-bg); border-color:var(--late-bd); color:var(--danger)}
+.gt-lbl{position:absolute; height:20px; display:flex; align-items:center; font-size:11px; color:var(--ink2); white-space:nowrap; z-index:2; padding-left:5px}
+
+.board{display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; align-items:flex-start}
+.bcol{flex:0 0 268px; background:var(--paper); border:1px solid var(--rule); border-radius:9px}
+.bcol h4{margin:0; padding:11px 14px; font-size:12.5px; border-bottom:1px solid var(--rule2); display:flex; gap:8px; align-items:center}
+.bcol h4 span.c{margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--muted)}
+.bcol .body{padding:10px; display:flex; flex-direction:column; gap:8px; max-height:62vh; overflow-y:auto}
+.bcard{border:1px solid var(--rule); border-left:3px solid var(--doing); border-radius:6px; padding:9px 11px; background:var(--paper); text-align:left; width:100%}
+.bcard:hover{border-color:var(--brand)}
+.bcard.late{border-left-color:var(--danger)}
+.bcard .c{font-size:11px; color:var(--muted); font-weight:600}
+.bcard .s{font-size:13px; font-weight:600; margin:2px 0 6px}
+.bcard .m{display:flex; gap:8px; align-items:center}
+
+.split{display:grid; grid-template-columns:290px 1fr; gap:14px; align-items:start}
+.side-co{padding:9px 14px 5px; font-size:11px; font-weight:800; letter-spacing:.04em; color:var(--muted);
+  display:flex; align-items:center; gap:6px; border-top:1px solid var(--rule2)}
+.side-co .acts{margin-left:auto; display:flex; gap:2px}
+.side-co .acts button{border:none; background:transparent; color:var(--muted); font-size:11px; padding:2px 4px}
+.side-co .acts button:hover{color:var(--brand)}
+.side-item{display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:8px 14px 8px 22px;
+  border:none; background:transparent; font-size:13px}
+.side-item:hover{background:var(--hover)}
+.side-item.on{background:var(--brand-soft); color:var(--brand); font-weight:700; box-shadow:inset 3px 0 0 var(--brand)}
+.side-item .mini{margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--muted)}
+.side-item.on .mini{color:var(--brand)}
+.mem-item{display:flex; align-items:center; gap:8px; padding:8px 14px; border-bottom:1px solid var(--rule2); font-size:13px}
+.mem-item .mini{margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--muted)}
+.mem-item button{border:none; background:transparent; color:var(--muted); font-size:11px; padding:2px 4px}
+.mem-item button:hover{color:var(--brand)}
+
+.step-row{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--rule2); flex-wrap:wrap}
+.step-row .idx{font-family:var(--mono); font-size:11px; color:var(--muted); width:24px; flex:none}
+.mv{display:flex; flex-direction:column; gap:1px; flex:none}
+.mv button{border:none; background:transparent; color:var(--muted); font-size:9px; line-height:1; padding:2px 4px}
+.mv button:hover{color:var(--brand)}
+.addbar{display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1px solid var(--rule); flex-wrap:wrap; align-items:center}
+.hint{font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.6}
+.mt8{margin-top:8px} .mt12{margin-top:12px} .mt16{margin-top:16px}
+
+#toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(70px);
+  background:var(--toast-bg); color:var(--toast-fg); padding:9px 18px; border-radius:20px; font-size:12.5px;
+  font-weight:600; opacity:0; transition:opacity .18s,transform .18s; pointer-events:none; z-index:90}
+#toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+
+@media (max-width:900px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .split{grid-template-columns:1fr}
+  .hbar{height:auto; padding:10px 14px; flex-wrap:wrap}
+  nav{margin-left:0; width:100%; overflow-x:auto}
+  main{padding:16px 14px 90px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px"><div class="seg theme-seg"></div></div>
+    <h1>진행현황 관리대장</h1>
+    <p>등록된 계정으로 로그인하세요.</p>
+    <div id="setupWarn" class="hide" style="border:1px solid var(--doing-bd);background:var(--doing-bg);color:var(--doing);border-radius:var(--r);padding:10px 12px;font-size:12.5px;margin-bottom:16px;line-height:1.55"></div>
+    <div class="row"><label class="lbl" for="em">이메일</label><input id="em" class="fld" type="email" autocomplete="username"></div>
+    <div class="row"><label class="lbl" for="pw">비밀번호</label><input id="pw" class="fld" type="password" autocomplete="current-password"></div>
+    <button id="loginBtn" class="btn primary" style="width:100%;margin-top:8px">로그인</button>
+    <div id="gateErr"></div>
+  </div>
+</div>
+
+<div id="app" class="hide">
+<header>
+  <div class="hbar">
+    <div class="brand"><span class="eyebrow">PROGRESS LEDGER</span><span class="name">진행현황 관리대장</span></div>
+    <nav>
+      <button class="tab on" data-v="dash">현황판</button>
+      <button class="tab" data-v="table">진행표</button>
+      <button class="tab" data-v="proj">프로젝트</button>
+      <button class="tab" data-v="base">기준정보</button>
+    </nav>
+    <div class="who"><div class="seg theme-seg"></div><span id="whoEmail"></span><button id="outBtn" class="btn sm">로그아웃</button></div>
+  </div>
+</header>
+
+<main>
+  <section id="v-dash">
+    <div class="view-head">
+      <h2>현황판</h2>
+      <div class="seg" id="subSeg">
+        <button class="on" data-s="sum">요약</button>
+        <button data-s="matrix">매트릭스</button>
+        <button data-s="gantt">타임라인</button>
+        <button data-s="board">진행중 보드</button>
+      </div>
+      <div class="sp">
+        <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="hideDone"> 완료 프로젝트 숨김</label>
+        <button class="btn" data-export="all">엑셀 추출</button>
+      </div>
+    </div>
+    <div id="dashBody"></div>
+  </section>
+
+  <section id="v-table" class="hide">
+    <div class="view-head">
+      <h2>진행표</h2><span class="sub">셀을 직접 수정하거나, 여러 행을 선택해 일괄 변경합니다</span>
+      <div class="sp"><button class="btn primary" data-export="filtered">엑셀 추출</button></div>
+    </div>
+    <div class="card">
+      <div class="filters">
+        <div class="f"><label class="lbl" for="fCo">회사</label><select id="fCo" class="fld"></select></div>
+        <div class="f"><label class="lbl" for="fTpl">절차</label><select id="fTpl" class="fld"></select></div>
+        <div class="f"><label class="lbl" for="fOwner">담당자</label><select id="fOwner" class="fld"></select></div>
+        <div class="f"><label class="lbl" for="fSort">정렬</label>
+          <select id="fSort" class="fld"><option value="co">프로젝트·순번순</option><option value="due">기한순</option></select></div>
+        <div class="f"><label class="lbl" for="fKey">키워드</label><input id="fKey" class="fld" placeholder="단계명·비고"></div>
+        <div><span class="lbl">상태</span>
+          <div class="chips" id="fStatus">
+            <button class="chip on" data-s="todo">미착수</button>
+            <button class="chip on" data-s="doing">진행중</button>
+            <button class="chip on" data-s="done">완료</button>
+            <button class="chip" data-s="late" style="margin-left:6px">지연만</button>
+          </div>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table id="bigTbl"></table></div>
+    </div>
+  </section>
+
+  <section id="v-proj" class="hide">
+    <div class="view-head"><h2>프로젝트</h2><span class="sub">회사 · 절차 · 기수 단위로 관리합니다</span></div>
+    <div class="split">
+      <div>
+        <div class="card">
+          <div class="card-h"><h3>회사 · 프로젝트</h3></div>
+          <div id="projList"></div>
+        </div>
+        <div class="card mt12">
+          <div class="card-h"><h3>새로 만들기</h3></div>
+          <div class="card-b">
+            <label class="lbl" for="newCo">회사 등록</label>
+            <div style="display:flex;gap:8px"><input id="newCo" class="fld" placeholder="회사명" style="flex:1">
+              <button id="addCo" class="btn">추가</button></div>
+            <div style="border-top:1px solid var(--rule2);margin:14px 0 0"></div>
+            <label class="lbl mt12" for="npCo">프로젝트 등록</label>
+            <select id="npCo" class="fld"></select>
+            <select id="npTpl" class="fld mt8"></select>
+            <input id="npPeriod" class="fld mt8" placeholder="기수 (예: 26Q2 반기)">
+            <input id="npBase" class="fld mt8" type="date" title="기준일">
+            <button id="addProj" class="btn primary mt12" style="width:100%">프로젝트 만들기</button>
+          </div>
+        </div>
+      </div>
+      <div id="projDetail"></div>
+    </div>
+  </section>
+
+  <section id="v-base" class="hide">
+    <div class="view-head"><h2>기준정보</h2><span class="sub">절차 템플릿 · 담당자 명단</span></div>
+    <div class="split">
+      <div>
+        <div class="card">
+          <div class="card-h"><h3>절차 템플릿</h3></div>
+          <div id="tplList"></div>
+          <div class="card-b" style="border-top:1px solid var(--rule2)">
+            <label class="lbl" for="newTpl">새 템플릿</label>
+            <div style="display:flex;gap:8px"><input id="newTpl" class="fld" placeholder="예: 반기검토 표준절차" style="flex:1">
+              <button id="addTpl" class="btn primary">추가</button></div>
+          </div>
+        </div>
+        <div class="card mt12">
+          <div class="card-h"><h3>담당자 명단</h3><span id="memCount" style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted)"></span></div>
+          <div id="memList"></div>
+          <div class="card-b" style="border-top:1px solid var(--rule2)">
+            <label class="lbl" for="newMem">담당자 추가</label>
+            <div style="display:flex;gap:8px"><input id="newMem" class="fld" placeholder="이름" style="flex:1">
+              <button id="addMem" class="btn primary">추가</button></div>
+          </div>
+        </div>
+      </div>
+      <div id="tplDetail"></div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* ===== Firebase ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDgYYLiDXVJiqDdtb25AvsdtR1hUxPBV2Y",
+  authDomain: "worklog-4445b.firebaseapp.com",
+  projectId: "worklog-4445b",
+  storageBucket: "worklog-4445b.firebasestorage.app",
+  messagingSenderId: "763693345629",
+  appId: "1:763693345629:web:1d73c1b2e1ed960f7416b4"
+};
+const COLLECTION = "projectTracker";
+const STALE_DAYS = 7;
+
+let auth = null, db = null, READY = false, INIT_ERR = "";
+(function(){
+  if (typeof firebase === "undefined"){ INIT_ERR = "Firebase SDK를 불러오지 못했습니다. 실제 호스팅 주소에서 열어주세요."; return; }
+  const bad = Object.entries(firebaseConfig).filter(([, v]) => !v || String(v).includes("붙여넣기")).map(([k]) => k);
+  if (bad.length){ INIT_ERR = "Firebase 설정 미입력: " + bad.join(", "); return; }
+  try { firebase.initializeApp(firebaseConfig); auth = firebase.auth(); db = firebase.firestore(); READY = true; }
+  catch(e){ INIT_ERR = "Firebase 초기화 실패: " + (e.code || e.message); }
+})();
+
+/* ===== 상태 ===== */
+const S = {todo:"미착수", doing:"진행중", done:"완료"};
+const ABBR = {todo:"○", doing:"◐", done:"●"};
+let DB = {companies:[], projects:[], templates:[], members:[]};
+let uid = null, docRef = null, unsub = null;
+let view = "dash", sub = "sum", selProj = null, selTpl = null, hideDone = false;
+let filters = {co:"", tpl:"", owner:"", key:"", sort:"co", status:{todo:true, doing:true, done:true}, lateOnly:false};
+let picked = new Set();          // 진행표 선택 (projId|stepId)
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid8 = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const DAY = 86400000;
+
+const todayStr = () => { const d = new Date(); d.setHours(0,0,0,0);
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
+const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
+const toD = s => { if (!isDate(s)) return null; const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); };
+const fromD = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+const addDays = (s, n) => { const d = toD(s); if (!d) return ""; d.setDate(d.getDate() + n); return fromD(d); };
+const diffDays = (a, b) => Math.round((toD(a) - toD(b)) / DAY);
+const md = s => isDate(s) ? s.slice(5).replace("-", "/") : "";
+
+const stOf = s => s.status || "todo";
+const ownersOf = s => Array.isArray(s.owners) ? s.owners : (s.owner ? [s.owner] : []);
+const dueOf = s => s.end || s.start || "";
+const isLate = s => stOf(s) !== "done" && isDate(dueOf(s)) && diffDays(dueOf(s), todayStr()) < 0;
+const staleDays = s => (stOf(s) === "doing" && isDate(s.startedAt)) ? diffDays(todayStr(), s.startedAt) : null;
+const ddText = s => {
+  const due = dueOf(s);
+  if (!isDate(due)) return {t:"–", c:"far"};
+  if (stOf(s) === "done") return {t:"완료", c:"far"};
+  const n = diffDays(due, todayStr());
+  if (n < 0) return {t:"D+" + (-n), c:"late"};
+  if (n === 0) return {t:"D-DAY", c:"late"};
+  return {t:"D-" + n, c:n <= 7 ? "soon" : "far"};
+};
+const periodText = s => (s.start && s.end && s.start !== s.end) ? (md(s.start) + "~" + md(s.end)) : (md(dueOf(s)) || "–");
+
+const coOf = id => DB.companies.find(c => c.id === id) || null;
+const coName = id => (coOf(id) || {name:"(삭제된 회사)"}).name;
+const tplOf = id => DB.templates.find(t => t.id === id) || null;
+const tplName = id => (tplOf(id) || {name:"절차 미지정"}).name;
+const projOf = id => DB.projects.find(p => p.id === id) || null;
+const projTitle = p => coName(p.coId) + (p.period ? " · " + p.period : "");
+const visProjects = () => hideDone ? DB.projects.filter(p => cnt(p).pct < 100) : DB.projects;
+
+let toastT;
+function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 1900); }
+
+/* ===== 테마 ===== */
+const THEMES = [["system","시스템"],["light","기본"],["dark","다크"]];
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+let themePref = window.__themePref || "system";
+function applyTheme(){
+  const dark = themePref === "dark" || (themePref === "system" && mq.matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $$(".theme-seg button").forEach(b => b.classList.toggle("on", b.dataset.t === themePref));
+}
+$$(".theme-seg").forEach(el => {
+  el.innerHTML = THEMES.map(([v,l]) => `<button type="button" data-t="${v}">${l}</button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.onclick = () => {
+    themePref = b.dataset.t; try{ localStorage.setItem("pt-theme", themePref); }catch(e){} applyTheme();
+  });
+});
+if (mq.addEventListener) mq.addEventListener("change", () => { if (themePref === "system") applyTheme(); });
+else if (mq.addListener) mq.addListener(() => { if (themePref === "system") applyTheme(); });
+applyTheme();
+
+/* ===== 인증 ===== */
+const ERRS = {
+  "auth/invalid-credential":"이메일 또는 비밀번호가 맞지 않습니다.",
+  "auth/wrong-password":"비밀번호가 맞지 않습니다.",
+  "auth/user-not-found":"등록되지 않은 계정입니다.",
+  "auth/invalid-email":"이메일 형식을 확인하세요.",
+  "auth/too-many-requests":"시도가 많습니다. 잠시 후 다시 로그인하세요.",
+  "auth/network-request-failed":"네트워크 요청이 차단됐습니다. 실제 주소에서 열어주세요.",
+  "auth/unauthorized-domain":"승인된 도메인이 아닙니다.",
+  "auth/operation-not-allowed":"이메일/비밀번호 로그인이 꺼져 있습니다.",
+  "auth/invalid-api-key":"apiKey 값이 잘못됐습니다."
+};
+function doLogin(){
+  const err = $("#gateErr"); err.textContent = "";
+  if (!READY){ err.textContent = INIT_ERR; return; }
+  const em = $("#em").value.trim(), pw = $("#pw").value;
+  if (!em || !pw){ err.textContent = "이메일과 비밀번호를 입력하세요."; return; }
+  $("#loginBtn").disabled = true;
+  auth.signInWithEmailAndPassword(em, pw)
+    .catch(e => { err.textContent = ERRS[e.code] || ("로그인 실패: " + (e.code || e.message)); })
+    .finally(() => { $("#loginBtn").disabled = false; });
+}
+$("#loginBtn").onclick = doLogin;
+$("#pw").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+$("#em").addEventListener("keydown", e => { if (e.key === "Enter") $("#pw").focus(); });
+$("#outBtn").onclick = () => auth && auth.signOut();
+if (!READY){ const w = $("#setupWarn"); w.textContent = INIT_ERR; w.classList.remove("hide"); $("#loginBtn").disabled = true; }
+
+READY && auth.onAuthStateChanged(u => {
+  if (unsub){ unsub(); unsub = null; }
+  if (!u){ uid = null; docRef = null; $("#app").classList.add("hide"); $("#gate").classList.remove("hide"); $("#pw").value = ""; return; }
+  uid = u.uid; docRef = db.collection(COLLECTION).doc(uid);
+  $("#whoEmail").textContent = u.email || "";
+  $("#gate").classList.add("hide"); $("#app").classList.remove("hide");
+  $("#npBase").value = todayStr();
+  listen();
+});
+
+/* ===== 동기화 ===== */
+let localKey = "";
+const snapKey = d => JSON.stringify([d.companies, d.projects, d.templates, d.members]);
+
+function migrate(){
+  let ch = false;
+  if (!Array.isArray(DB.projects)){ DB.projects = []; ch = true; }
+  if (!Array.isArray(DB.members)){ DB.members = []; ch = true; }
+
+  // v2(회사에 단계 직접 보유) → v3(프로젝트 계층)
+  DB.companies.forEach(c => {
+    if (Array.isArray(c.steps)){
+      const p = {id:uid8(), coId:c.id, tplId:c.tplId || "", period:"", steps:c.steps};
+      DB.projects.push(p); delete c.steps; delete c.tplId; ch = true;
+    }
+  });
+  DB.projects.forEach(p => {
+    if (p.period === undefined){ p.period = ""; ch = true; }
+    if (p.tplId === undefined){ p.tplId = ""; ch = true; }
+    (p.steps || []).forEach(s => {
+      if ("plan" in s){ if (isDate(s.plan)) s.end = s.plan; else if (s.plan) s.memo = (s.memo ? s.memo + " / " : "") + "예정:" + s.plan; delete s.plan; ch = true; }
+      if ("due" in s){ if (!s.end) s.end = s.due; delete s.due; ch = true; }
+      if (s.start === undefined){ s.start = ""; ch = true; }
+      if (s.end === undefined){ s.end = ""; ch = true; }
+      if (!Array.isArray(s.owners)){ s.owners = s.owner ? [s.owner] : []; delete s.owner; ch = true; }
+      s.owners.forEach(o => { if (o && !DB.members.includes(o)){ DB.members.push(o); ch = true; } });
+    });
+  });
+  DB.templates.forEach(t => (t.steps || []).forEach(s => {
+    if ("plan" in s){ const n = parseInt(s.plan, 10); if (!isNaN(n)) s.offset = n; delete s.plan; ch = true; }
+    if (s.offset === undefined){ s.offset = ""; ch = true; }
+    if (s.dur === undefined){ s.dur = ""; ch = true; }
+  }));
+  return ch;
+}
+
+function listen(){
+  unsub = docRef.onSnapshot(snap => {
+    const d = snap.data() || {};
+    const inc = {companies:d.companies || [], projects:d.projects || [], templates:d.templates || [], members:d.members || []};
+    const key = snapKey(inc);
+    if (snap.metadata.hasPendingWrites || key === localKey){ localKey = key; return; }
+    DB = inc; localKey = key;
+    if (migrate()) save(true);
+    if (selProj && !projOf(selProj)) selProj = null;
+    if (selTpl && !tplOf(selTpl)) selTpl = null;
+    render();
+  }, e => toast("불러오기 실패: " + e.code));
+}
+
+let saveT;
+function save(now){
+  if (!docRef) return;
+  clearTimeout(saveT);
+  const write = () => {
+    localKey = snapKey(DB);
+    docRef.set({companies:DB.companies, projects:DB.projects, templates:DB.templates, members:DB.members,
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()}, {merge:true})
+      .catch(e => toast("저장 실패: " + e.code));
+  };
+  now ? write() : (saveT = setTimeout(write, 900));
+}
+window.addEventListener("beforeunload", () => { if (saveT){ clearTimeout(saveT); save(true); } });
+
+/* ===== 네비 ===== */
+$$(".tab").forEach(b => b.onclick = () => goTab(b.dataset.v));
+function goTab(v){
+  view = v;
+  $$(".tab").forEach(x => x.classList.toggle("on", x.dataset.v === v));
+  ["dash","table","proj","base"].forEach(x => $("#v-" + x).classList.toggle("hide", x !== v));
+  render();
+}
+$$("#subSeg button").forEach(b => b.onclick = () => { sub = b.dataset.s; renderDash(); });
+$("#hideDone").onchange = e => { hideDone = e.target.checked; renderDash(); };
+
+/* ===== 집계 ===== */
+function cnt(p){
+  const s = p.steps || [], r = {all:s.length, todo:0, doing:0, done:0, late:0};
+  s.forEach(x => { r[stOf(x)]++; if (isLate(x)) r.late++; });
+  r.pct = s.length ? Math.round(r.done / s.length * 100) : 0;
+  return r;
+}
+const running = p => (p.steps || []).filter(s => stOf(s) === "doing");
+
+function groupByTpl(list){
+  const g = new Map();
+  list.forEach(p => { const id = tplOf(p.tplId) ? p.tplId : ""; if (!g.has(id)) g.set(id, []); g.get(id).push(p); });
+  return Array.from(g.entries()).sort((a, b) => (a[0] === "" ? 1 : 0) - (b[0] === "" ? 1 : 0));
+}
+function colsFor(tid, list){
+  const t = tplOf(tid);
+  if (t) return (t.steps || []).map(s => s.name);
+  const seen = [];
+  list.forEach(p => (p.steps || []).forEach(s => { if (!seen.includes(s.name)) seen.push(s.name); }));
+  return seen;
+}
+
+function render(){
+  if (view === "dash") renderDash();
+  if (view === "table") renderTable();
+  if (view === "proj") renderProj();
+  if (view === "base") renderBase();
+}
+
+/* ===== 현황판 ===== */
+function renderDash(){
+  $$("#subSeg button").forEach(x => x.classList.toggle("on", x.dataset.s === sub));
+  if (sub === "sum") dashSummary();
+  else if (sub === "matrix") dashMatrix();
+  else if (sub === "gantt") dashGantt();
+  else dashBoard();
+}
+
+function dashSummary(){
+  const ps = visProjects();
+  const t = {all:0, doing:0, done:0, late:0};
+  ps.forEach(p => { const k = cnt(p); t.all += k.all; t.doing += k.doing; t.done += k.done; t.late += k.late; });
+  const pct = t.all ? Math.round(t.done / t.all * 100) : 0;
+  const stats = [
+    ["진행 프로젝트", ps.length + "<small>건</small>"],
+    ["동시 진행중 단계", `<span style="color:var(--doing)">${t.doing}</span><small>건</small>`],
+    ["지연", `<span style="color:${t.late ? "var(--danger)" : "inherit"}">${t.late}</span><small>건</small>`],
+    ["전체 완료율", pct + "<small>%</small>"]
+  ].map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+  const load = {};
+  ps.forEach(p => running(p).forEach(s => {
+    const os = ownersOf(s); (os.length ? os : ["미지정"]).forEach(o => {
+      load[o] = load[o] || {n:0, late:0}; load[o].n++; if (isLate(s)) load[o].late++;
+    });
+  }));
+  const owners = Object.entries(load).sort((a, b) => b[1].n - a[1].n);
+  const max = owners.length ? owners[0][1].n : 1;
+  const loadHtml = owners.length ? owners.map(([o, v]) => `
+    <div class="load"><span class="nm">${esc(o)}</span>
+      <span class="bar"><i class="late" style="width:${v.late / max * 100}%"></i><i style="width:${(v.n - v.late) / max * 100}%"></i></span>
+      <span class="n"><b>${v.n}</b>건${v.late ? ` · <span style="color:var(--danger)">지연 ${v.late}</span>` : ""}</span></div>`).join("")
+    : `<div class="empty" style="padding:18px">진행중인 단계가 없습니다.</div>`;
+
+  const cards = ps.length ? ps.map(p => {
+    const k = cnt(p), runs = running(p);
+    const strip = (p.steps || []).map(s => `<i class="${isLate(s) ? "late" : stOf(s)}" title="${esc(s.name)} · ${S[stOf(s)]} · ${periodText(s)}"></i>`).join("") || "<i></i>";
+    const runHtml = runs.length ? runs.map(s => {
+      const d = ddText(s), sd = staleDays(s), os = ownersOf(s);
+      return `<div class="run ${isLate(s) ? "late" : ""}"><span class="t">${esc(s.name)}</span>
+        ${os.length ? `<span class="o">${esc(os.join("·"))}</span>` : ""}
+        ${sd !== null && sd >= STALE_DAYS ? `<span class="tag stale">${sd}일째</span>` : ""}
+        <span class="d">${d.t}</span></div>`;
+    }).join("") : `<div class="run-none">진행중인 단계 없음</div>`;
+    return `<button class="co-card" data-goproj="${p.id}">
+      <div class="top"><span class="nm">${esc(coName(p.coId))}</span>
+        ${k.late ? `<span class="tag late">지연 ${k.late}</span>` : ""}<span class="pct">${k.pct}%</span></div>
+      <div class="meta">${esc(p.period || "기수 미지정")} · ${esc(tplName(p.tplId))}</div>
+      <div class="strip">${strip}</div>
+      <div class="counts"><span>완료 <b>${k.done}</b></span><span>진행중 <b>${k.doing}</b></span><span>미착수 <b>${k.todo}</b></span><span>총 <b>${k.all}</b></span></div>
+      <div class="runs">${runHtml}</div></button>`;
+  }).join("") : `<div class="card"><div class="empty"><strong>프로젝트가 없습니다</strong>기준정보에서 절차 템플릿을 만들고, 프로젝트 탭에서 회사와 프로젝트를 등록하세요.</div></div>`;
+
+  $("#dashBody").innerHTML = `<div class="stats">${stats}</div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-h"><h3>담당자별 진행중 부하</h3><span style="margin-left:auto;font-size:11.5px;color:var(--muted)">붉은 구간 = 지연</span></div>
+      <div class="card-b" style="padding:10px 16px">${loadHtml}</div></div>
+    <div class="co-grid">${cards}</div>`;
+  $$("[data-goproj]").forEach(b => b.onclick = () => { selProj = b.dataset.goproj; goTab("proj"); });
+}
+
+function dashMatrix(){
+  const ps = visProjects();
+  if (!ps.length){ $("#dashBody").innerHTML = `<div class="card"><div class="empty"><strong>표시할 프로젝트가 없습니다</strong></div></div>`; return; }
+  const blocks = groupByTpl(ps).map(([tid, list]) => {
+    const cols = colsFor(tid, list);
+    const label = tid ? esc(tplName(tid)) : "절차 미지정";
+    if (!cols.length) return `<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>${label}</h3></div><div class="empty">등록된 단계가 없습니다.</div></div>`;
+    const rows = list.map(p => {
+      const by = {}; (p.steps || []).forEach(s => { if (!by[s.name]) by[s.name] = s; });
+      const k = cnt(p);
+      const extra = (p.steps || []).filter(s => !cols.includes(s.name)).length;
+      const cells = cols.map(n => {
+        const s = by[n];
+        if (!s) return `<td class="cell"><span class="dot na">·</span></td>`;
+        const cls = isLate(s) ? "late" : stOf(s);
+        return `<td class="cell"><span class="dot ${cls}" title="${esc(s.name)} · ${S[stOf(s)]} · ${periodText(s)}${ownersOf(s).length ? " · " + esc(ownersOf(s).join("·")) : ""}">${ABBR[stOf(s)]}${dueOf(s) ? " " + md(dueOf(s)) : ""}</span></td>`;
+      }).join("");
+      return `<tr><td class="cx">${esc(coName(p.coId))}<br><span class="sub2">${esc(p.period || "기수 미지정")}</span>
+        ${extra ? ` <span class="tag stale">+${extra}</span>` : ""}</td>${cells}
+        <td class="cell mono" style="font-weight:700;color:var(--brand)">${k.pct}%</td></tr>`;
+    }).join("");
+    return `<div class="card" style="margin-bottom:14px">
+      <div class="card-h"><h3>${label}</h3><span style="margin-left:auto;font-size:11.5px;color:var(--muted)">${list.length}개 프로젝트 · ${cols.length}단계</span></div>
+      <div class="tbl-wrap" style="max-height:56vh"><table class="mx">
+        <thead><tr><th class="cx">프로젝트</th>${cols.map(n => `<th>${esc(n)}</th>`).join("")}<th>진행률</th></tr></thead>
+        <tbody>${rows}</tbody></table></div></div>`;
+  }).join("");
+  $("#dashBody").innerHTML = blocks + `<div class="card"><div class="card-b" style="padding:11px 16px;font-size:11.5px;color:var(--muted);line-height:1.7">
+    표는 <b>프로젝트의 절차 템플릿</b>별로 분리됩니다. 서로 다른 절차는 절대 한 표에 섞이지 않습니다.<br>
+    ○ 미착수 · ◐ 진행중 · ● 완료 · 붉은색 = 기한 초과 · <b>·</b> = 해당 단계 없음 · <b>+N</b> = 템플릿 외 개별 단계
+  </div></div>`;
+}
+
+function dashGantt(){
+  const ps = visProjects().filter(p => (p.steps || []).some(s => isDate(dueOf(s))));
+  if (!ps.length){ $("#dashBody").innerHTML = `<div class="card"><div class="empty"><strong>일정이 입력된 단계가 없습니다</strong>프로젝트 탭에서 시작일·종료일을 지정하면 타임라인이 그려집니다.</div></div>`; return; }
+  const today = todayStr();
+  let min = today, max = today;
+  ps.forEach(p => (p.steps || []).forEach(s => {
+    const a = s.start || dueOf(s), b = dueOf(s);
+    if (isDate(a) && a < min) min = a;
+    if (isDate(b) && b > max) max = b;
+  }));
+  const start = addDays(min, -7), end = addDays(max, 10);
+  const span = diffDays(end, start) + 1, dayW = 6, W = span * dayW;
+  let ticks = "";
+  for (let i = 0; i <= span; i += 7) ticks += `<div class="gt-tick" style="left:${i * dayW}px"><span>${md(addDays(start, i))}</span></div>`;
+  const todayX = diffDays(today, start) * dayW;
+
+  const rows = ps.map(p => {
+    const list = (p.steps || []).filter(s => isDate(dueOf(s))).map(s => {
+      const a = isDate(s.start) ? s.start : dueOf(s), b = dueOf(s);
+      const x = diffDays(a, start) * dayW;
+      const w = Math.max(10, (diffDays(b, a) + 1) * dayW);
+      const label = [...s.name].length > 12 ? [...s.name].slice(0, 12).join("") + "…" : s.name;
+      return {s, x, w, label, lw:w >= 14 + [...label].length * 11 ? 0 : 12 + [...label].length * 11};
+    }).sort((a, b) => a.x - b.x);
+    const lanes = [];
+    list.forEach(it => {
+      const total = it.w + it.lw + 6;
+      let li = lanes.findIndex(e => e <= it.x);
+      if (li === -1){ lanes.push(0); li = lanes.length - 1; }
+      lanes[li] = it.x + total; it.lane = li;
+    });
+    const bars = list.map(it => {
+      const cls = isLate(it.s) ? "late" : stOf(it.s);
+      const top = it.lane * 24 + 6;
+      const tip = `${esc(it.s.name)} · ${S[stOf(it.s)]} · ${periodText(it.s)}${ownersOf(it.s).length ? " · " + esc(ownersOf(it.s).join("·")) : ""}`;
+      return `<div class="gt-bar ${cls}" style="left:${it.x}px;top:${top}px;width:${it.w}px" title="${tip}">${it.lw ? "" : esc(it.label)}</div>`
+        + (it.lw ? `<div class="gt-lbl" style="left:${it.x + it.w}px;top:${top}px" title="${tip}">${esc(it.label)}</div>` : "");
+    }).join("");
+    const h = Math.max(1, lanes.length) * 24 + 12;
+    return `<div class="gt-row"><div class="gt-name">${esc(coName(p.coId))}<span class="sub2">${esc(p.period || tplName(p.tplId))}</span></div>
+      <div class="gt-track" style="height:${h}px;width:${W}px">${ticks}<div class="gt-today" style="left:${todayX}px"></div>${bars}</div></div>`;
+  }).join("");
+
+  $("#dashBody").innerHTML = `<div class="card">
+    <div class="card-h"><h3>타임라인</h3><span style="margin-left:auto;font-size:11.5px;color:var(--muted)">막대 = 시작일~종료일 · 붉은 세로선 = 오늘</span></div>
+    <div class="gantt"><div style="min-width:${W + 178}px">
+      <div class="gt-row gt-head"><div class="gt-name">프로젝트</div>
+        <div class="gt-track" style="width:${W}px">${ticks}<div class="gt-today" style="left:${todayX}px"></div></div></div>
+      ${rows}</div></div></div>`;
+}
+
+function dashBoard(){
+  const byOwner = {};
+  visProjects().forEach(p => running(p).forEach(s => {
+    const os = ownersOf(s); (os.length ? os : ["미지정"]).forEach(o => (byOwner[o] = byOwner[o] || []).push({p, s}));
+  }));
+  const cols = Object.entries(byOwner).sort((a, b) => b[1].length - a[1].length);
+  if (!cols.length){ $("#dashBody").innerHTML = `<div class="card"><div class="empty"><strong>진행중인 단계가 없습니다</strong></div></div>`; return; }
+  $("#dashBody").innerHTML = `<div class="board">${cols.map(([o, arr]) => {
+    const late = arr.filter(x => isLate(x.s)).length;
+    const cards = arr.sort((a, b) => (dueOf(a.s) || "9999").localeCompare(dueOf(b.s) || "9999")).map(({p, s}) => {
+      const d = ddText(s), sd = staleDays(s), others = ownersOf(s).filter(x => x !== o);
+      return `<button class="bcard ${isLate(s) ? "late" : ""}" data-goproj="${p.id}">
+        <div class="c">${esc(coName(p.coId))}${p.period ? " · " + esc(p.period) : ""}</div>
+        <div class="s">${esc(s.name)}</div>
+        <div class="m"><span class="dd ${d.c}">${d.t}</span><span class="mono" style="color:var(--muted)">${esc(periodText(s))}</span>
+          ${others.length ? `<span class="sub2">+${esc(others.join("·"))}</span>` : ""}
+          ${sd !== null && sd >= STALE_DAYS ? `<span class="tag stale" style="margin-left:auto">${sd}일째</span>` : ""}</div></button>`;
+    }).join("");
+    return `<div class="bcol"><h4>${esc(o)}${late ? ` <span class="tag late">지연 ${late}</span>` : ""}<span class="c">${arr.length}건</span></h4>
+      <div class="body">${cards}</div></div>`;
+  }).join("")}</div>`;
+  $$("[data-goproj]").forEach(b => b.onclick = () => { selProj = b.dataset.goproj; goTab("proj"); });
+}
+
+/* ===== 담당자 선택 팝오버 ===== */
+let popTarget = null;
+function ownLabel(list){ return list.length ? list.join(", ") : "담당자 –"; }
+function ownBtn(s, key){
+  const os = ownersOf(s);
+  return `<button class="own ${os.length ? "" : "none"}" data-own="${key}" title="${esc(ownLabel(os))}">${esc(ownLabel(os))}</button>`;
+}
+function closePop(){ const p = $("#ownPop"); if (p) p.remove(); popTarget = null; }
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-own]");
+  if (!b){ if (!e.target.closest("#ownPop")) closePop(); return; }
+  e.preventDefault(); e.stopPropagation();
+  if (popTarget === b){ closePop(); return; }
+  closePop(); popTarget = b;
+  const [pid, sid] = b.dataset.own.split("|");
+  const p = projOf(pid); if (!p) return;
+  const st = (p.steps || []).find(x => x.id === sid); if (!st) return;
+  const cur = ownersOf(st);
+  const pop = document.createElement("div");
+  pop.id = "ownPop";
+  pop.innerHTML = DB.members.length
+    ? DB.members.map(m => `<label><input type="checkbox" value="${esc(m)}" ${cur.includes(m) ? "checked" : ""}>${esc(m)}</label>`).join("")
+    : `<div class="none">기준정보 탭에서 담당자를 먼저 등록하세요.</div>`;
+  document.body.appendChild(pop);
+  const r = b.getBoundingClientRect();
+  pop.style.left = Math.min(r.left, window.innerWidth - pop.offsetWidth - 12) + "px";
+  pop.style.top = (r.bottom + 6 + pop.offsetHeight > window.innerHeight ? r.top - pop.offsetHeight - 6 : r.bottom + 6) + "px";
+  pop.querySelectorAll("input").forEach(cb => cb.onchange = () => {
+    const list = Array.from(pop.querySelectorAll("input:checked")).map(x => x.value);
+    st.owners = list; save();
+    b.textContent = ownLabel(list); b.title = ownLabel(list);
+    b.classList.toggle("none", !list.length);
+  });
+});
+window.addEventListener("resize", closePop);
+
+/* ===== 진행표 ===== */
+function flatRows(useFilter){
+  const out = [];
+  visProjects().forEach(p => (p.steps || []).forEach((s, i) => {
+    const os = ownersOf(s);
+    const r = {p, s, no:i + 1, co:coName(p.coId), period:p.period || "", tpl:p.tplId || "",
+               status:stOf(s), owners:os, late:isLate(s), stale:staleDays(s), key:p.id + "|" + s.id};
+    if (useFilter){
+      if (filters.co && p.coId !== filters.co) return;
+      if (filters.tpl && (filters.tpl === "__none" ? (p.tplId || "") !== "" : (p.tplId || "") !== filters.tpl)) return;
+      if (!filters.status[r.status]) return;
+      if (filters.lateOnly && !r.late) return;
+      if (filters.owner === "__none" ? os.length : (filters.owner && !os.includes(filters.owner))) return;
+      if (filters.key && !((s.name + " " + (s.memo || "")).toLowerCase().includes(filters.key.toLowerCase()))) return;
+    }
+    out.push(r);
+  }));
+  if (useFilter && filters.sort === "due")
+    out.sort((a, b) => (dueOf(a.s) || "9999-99-99").localeCompare(dueOf(b.s) || "9999-99-99") || a.co.localeCompare(b.co));
+  return out;
+}
+
+function renderTable(){
+  $("#fCo").innerHTML = `<option value="">전체 회사</option>` + DB.companies.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("#fCo").value = filters.co;
+  $("#fTpl").innerHTML = `<option value="">전체 절차</option><option value="__none">절차 미지정</option>` +
+    DB.templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+  $("#fTpl").value = filters.tpl;
+  $("#fOwner").innerHTML = `<option value="">전체 담당자</option><option value="__none">미지정</option>` +
+    DB.members.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+  $("#fOwner").value = filters.owner;
+
+  const rows = flatRows(true);
+  const keys = new Set(rows.map(r => r.key));
+  picked = new Set(Array.from(picked).filter(k => keys.has(k)));
+
+  $("#bigTbl").innerHTML = `
+    <thead><tr>
+      <th style="width:30px"><input type="checkbox" id="chkAll"></th>
+      <th style="width:150px">프로젝트</th><th style="width:34px">순번</th><th style="min-width:190px">절차단계</th>
+      <th style="width:116px">시작일</th><th style="width:116px">종료일</th><th style="width:58px">D-day</th>
+      <th style="width:92px">상태</th><th style="width:130px">담당자</th><th style="min-width:170px">비고</th>
+    </tr></thead>
+    <tbody>${rows.length ? rows.map(r => `
+      <tr data-k="${r.key}" class="${picked.has(r.key) ? "sel" : ""}">
+        <td><input type="checkbox" class="rowchk" data-k="${r.key}" ${picked.has(r.key) ? "checked" : ""}></td>
+        <td class="co">${esc(r.co)}<br><span class="sub2">${esc(r.period || tplName(r.tpl))}</span></td>
+        <td class="num">${String(r.no).padStart(2, "0")}</td>
+        <td><input class="cell-in" type="text" data-e="name" data-k="${r.key}" value="${esc(r.s.name)}">
+          ${r.stale !== null && r.stale >= STALE_DAYS ? `<span class="tag stale">${r.stale}일째</span>` : ""}</td>
+        <td><input class="cell-in" type="date" data-e="start" data-k="${r.key}" value="${esc(r.s.start || "")}"></td>
+        <td><input class="cell-in" type="date" data-e="end" data-k="${r.key}" value="${esc(r.s.end || "")}"></td>
+        <td class="ddcell"><span class="dd ${ddText(r.s).c}">${ddText(r.s).t}</span></td>
+        <td><select class="st ${r.status}" data-e="status" data-k="${r.key}">
+          ${Object.keys(S).map(v => `<option value="${v}" ${r.status === v ? "selected" : ""}>${S[v]}</option>`).join("")}</select></td>
+        <td>${ownBtn(r.s, r.key)}</td>
+        <td><input class="cell-in" type="text" data-e="memo" data-k="${r.key}" value="${esc(r.s.memo || "")}" placeholder="–"></td>
+      </tr>`).join("") : `<tr><td colspan="10"><div class="empty">조건에 맞는 단계가 없습니다.</div></td></tr>`}
+    </tbody>`;
+  wireTable();
+  renderBulk();
+}
+
+const findStep = key => { const [pid, sid] = key.split("|"); const p = projOf(pid); if (!p) return [null, null];
+  return [p, (p.steps || []).find(s => s.id === sid) || null]; };
+
+function refreshRow(key){
+  const [, s] = findStep(key); if (!s) return;
+  const tr = document.querySelector(`tr[data-k="${key}"]`); if (!tr) return;
+  const d = ddText(s);
+  tr.querySelector(".ddcell").innerHTML = `<span class="dd ${d.c}">${d.t}</span>`;
+  const sel = tr.querySelector("select[data-e='status']");
+  if (sel){ sel.className = "st " + stOf(s); }
+}
+
+function wireTable(){
+  $$("#bigTbl input.cell-in").forEach(el => {
+    const ev = el.type === "date" ? "change" : "input";
+    el.addEventListener(ev, () => {
+      const [, s] = findStep(el.dataset.k); if (!s) return;
+      s[el.dataset.e] = el.value;
+      if (el.dataset.e === "end" && s.start && s.end && s.start > s.end){ s.start = s.end;
+        const si = document.querySelector(`input[data-e="start"][data-k="${el.dataset.k}"]`); if (si) si.value = s.start; }
+      if (el.dataset.e === "start" && s.start && s.end && s.start > s.end){ s.end = s.start;
+        const ei = document.querySelector(`input[data-e="end"][data-k="${el.dataset.k}"]`); if (ei) ei.value = s.end; }
+      save(el.type === "date"); refreshRow(el.dataset.k);
+    });
+  });
+  $$("#bigTbl select[data-e='status']").forEach(el => el.onchange = () => {
+    const [, s] = findStep(el.dataset.k); if (!s) return;
+    setStatus(s, el.value); save(true); refreshRow(el.dataset.k);
+  });
+  $$("#bigTbl .rowchk").forEach(cb => cb.onchange = () => {
+    cb.checked ? picked.add(cb.dataset.k) : picked.delete(cb.dataset.k);
+    const tr = cb.closest("tr"); tr.classList.toggle("sel", cb.checked);
+    renderBulk();
+  });
+  const all = $("#chkAll");
+  if (all) all.onchange = () => {
+    $$("#bigTbl .rowchk").forEach(cb => { cb.checked = all.checked;
+      cb.checked ? picked.add(cb.dataset.k) : picked.delete(cb.dataset.k);
+      cb.closest("tr").classList.toggle("sel", cb.checked); });
+    renderBulk();
+  };
+}
+
+function setStatus(s, v){
+  const now = todayStr();
+  s.status = v;
+  if (v === "doing" && !isDate(s.startedAt)) s.startedAt = now;
+  if (v === "done"){ if (!isDate(s.startedAt)) s.startedAt = now; s.doneAt = now; }
+  if (v === "todo"){ delete s.startedAt; delete s.doneAt; }
+}
+
+/* ----- 일괄 편집 바 ----- */
+function renderBulk(){
+  let bar = $("#bulk");
+  if (!picked.size){ if (bar) bar.remove(); return; }
+  if (!bar){ bar = document.createElement("div"); bar.id = "bulk"; document.body.appendChild(bar); }
+  bar.innerHTML = `
+    <span class="cntx">${picked.size}건 선택</span>
+    <select id="bStatus"><option value="">상태 일괄…</option>${Object.keys(S).map(v => `<option value="${v}">${S[v]}</option>`).join("")}</select>
+    <select id="bOwner"><option value="">담당자…</option>${DB.members.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join("")}</select>
+    <button class="btn sm" id="bAdd">추가</button><button class="btn sm" id="bSet">교체</button>
+    <select id="bDateF"><option value="end">종료일</option><option value="start">시작일</option></select>
+    <input id="bDate" type="date" style="width:140px"><button class="btn sm" id="bDateGo">지정</button>
+    <input id="bShift" type="number" placeholder="±일" style="width:74px"><button class="btn sm" id="bShiftGo">이동</button>
+    <button class="btn sm ghost" id="bDel">삭제</button>
+    <button class="btn sm" id="bClear">해제</button>`;
+
+  const each = fn => { picked.forEach(k => { const [, s] = findStep(k); if (s) fn(s, k); }); save(true); renderTable(); };
+  $("#bStatus").onchange = e => { if (!e.target.value) return; const v = e.target.value; each(s => setStatus(s, v)); toast(`${picked.size}건 상태 변경`); };
+  $("#bAdd").onclick = () => { const o = $("#bOwner").value; if (!o) return toast("담당자를 고르세요");
+    each(s => { const l = ownersOf(s); if (!l.includes(o)) l.push(o); s.owners = l; }); };
+  $("#bSet").onclick = () => { const o = $("#bOwner").value; if (!o) return toast("담당자를 고르세요"); each(s => { s.owners = [o]; }); };
+  $("#bDateGo").onclick = () => { const v = $("#bDate").value, f = $("#bDateF").value; if (!v) return toast("날짜를 고르세요");
+    each(s => { s[f] = v; if (s.start && s.end && s.start > s.end) (f === "end" ? s.start = v : s.end = v); }); };
+  $("#bShiftGo").onclick = () => { const n = parseInt($("#bShift").value, 10); if (isNaN(n) || !n) return toast("이동할 일수를 입력하세요");
+    each(s => { if (isDate(s.start)) s.start = addDays(s.start, n); if (isDate(s.end)) s.end = addDays(s.end, n); }); toast(`${n > 0 ? "+" : ""}${n}일 이동`); };
+  $("#bDel").onclick = () => {
+    if (!confirm(`선택한 ${picked.size}건의 단계를 삭제할까요?`)) return;
+    picked.forEach(k => { const [p, s] = findStep(k); if (p && s) p.steps = p.steps.filter(x => x.id !== s.id); });
+    picked.clear(); save(true); renderTable(); toast("삭제되었습니다");
+  };
+  $("#bClear").onclick = () => { picked.clear(); renderTable(); };
+}
+
+$("#fCo").onchange = e => { filters.co = e.target.value; renderTable(); };
+$("#fTpl").onchange = e => { filters.tpl = e.target.value; renderTable(); };
+$("#fOwner").onchange = e => { filters.owner = e.target.value; renderTable(); };
+$("#fSort").onchange = e => { filters.sort = e.target.value; renderTable(); };
+$("#fKey").oninput = e => { filters.key = e.target.value.trim(); renderTable(); };
+$$("#fStatus .chip").forEach(b => b.onclick = () => {
+  if (b.dataset.s === "late"){ filters.lateOnly = !filters.lateOnly; b.classList.toggle("on", filters.lateOnly); b.classList.toggle("red", filters.lateOnly); }
+  else { filters.status[b.dataset.s] = !filters.status[b.dataset.s]; b.classList.toggle("on", filters.status[b.dataset.s]); }
+  renderTable();
+});
+
+/* ===== 프로젝트 ===== */
+function renderProj(){
+  const sel = DB.companies.map(c => {
+    const list = DB.projects.filter(p => p.coId === c.id);
+    return `<div class="side-co">${esc(c.name)}
+        <span class="acts"><button data-coren="${c.id}" title="이름변경">✎</button><button data-codel="${c.id}" title="삭제">✕</button></span></div>`
+      + (list.length ? list.map(p => { const k = cnt(p);
+          return `<button class="side-item ${p.id === selProj ? "on" : ""}" data-p="${p.id}">
+            ${esc(p.period || tplName(p.tplId))}${k.late ? ` <span class="tag late">${k.late}</span>` : ""}
+            <span class="mini">${k.done}/${k.all}</span></button>`; }).join("")
+        : `<div style="padding:6px 22px 8px;font-size:12px;color:var(--muted)">프로젝트 없음</div>`);
+  }).join("");
+  $("#projList").innerHTML = sel || `<div class="empty" style="padding:26px 16px">회사를 먼저 등록하세요.</div>`;
+  $$("[data-p]").forEach(b => b.onclick = () => { selProj = b.dataset.p; renderProj(); });
+  $$("[data-coren]").forEach(b => b.onclick = () => {
+    const c = coOf(b.dataset.coren); const n = prompt("회사명", c.name);
+    if (n && n.trim()){ c.name = n.trim(); save(true); renderProj(); }
+  });
+  $$("[data-codel]").forEach(b => b.onclick = () => {
+    const c = coOf(b.dataset.codel), n = DB.projects.filter(p => p.coId === c.id).length;
+    if (!confirm(`「${c.name}」를 삭제할까요?${n ? `\n소속 프로젝트 ${n}건도 함께 삭제됩니다.` : ""}`)) return;
+    DB.companies = DB.companies.filter(x => x.id !== c.id);
+    DB.projects = DB.projects.filter(p => p.coId !== c.id);
+    if (selProj && !projOf(selProj)) selProj = null;
+    save(true); renderProj();
+  });
+
+  $("#npCo").innerHTML = DB.companies.length
+    ? DB.companies.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("")
+    : `<option value="">회사를 먼저 등록하세요</option>`;
+  $("#npTpl").innerHTML = `<option value="">절차 미지정 (빈 단계)</option>` +
+    DB.templates.map(t => `<option value="${t.id}">${esc(t.name)} (${(t.steps || []).length}단계)</option>`).join("");
+
+  const p = projOf(selProj);
+  if (!p){ $("#projDetail").innerHTML = `<div class="card"><div class="empty"><strong>프로젝트를 선택하세요</strong>왼쪽에서 프로젝트를 고르면 단계를 편집할 수 있습니다.</div></div>`; return; }
+  const k = cnt(p);
+  $("#projDetail").innerHTML = `
+    <div class="card">
+      <div class="card-h">
+        <h3>${esc(coName(p.coId))}</h3>
+        <span class="tag tpl">${esc(tplName(p.tplId))}</span>
+        <span class="sub2">${esc(p.period || "기수 미지정")}</span>
+        ${k.late ? `<span class="tag late">지연 ${k.late}</span>` : ""}
+        <span class="mono" style="font-weight:700;color:var(--brand)">${k.pct}%</span>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="pTpl" class="fld" style="width:auto;font-size:12px;padding:5px 9px">
+            <option value="">절차 미지정</option>
+            ${DB.templates.map(t => `<option value="${t.id}" ${p.tplId === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}
+          </select>
+          <button class="btn sm" id="pPeriod">기수 변경</button>
+          <button class="btn sm" id="pLoad">단계 불러오기</button>
+          <button class="btn sm" id="pClone">새 기수로 복제</button>
+          <button class="btn sm ghost" id="pDel">삭제</button>
+        </div>
+      </div>
+      <div class="card-b">
+        <div class="strip">${(p.steps || []).map(s => `<i class="${isLate(s) ? "late" : stOf(s)}"></i>`).join("") || "<i></i>"}</div>
+        <div class="tbl-wrap mt16"><table>
+          <thead><tr><th style="width:56px">순번</th><th style="min-width:180px">절차단계</th>
+            <th style="width:120px">시작일</th><th style="width:120px">종료일</th><th style="width:56px">D-day</th>
+            <th style="width:96px">상태</th><th style="width:130px">담당자</th><th style="min-width:150px">비고</th><th style="width:32px"></th></tr></thead>
+          <tbody>${(p.steps || []).map((s, i) => { const d = ddText(s), sd = staleDays(s), key = p.id + "|" + s.id;
+            return `<tr>
+              <td><div style="display:flex;align-items:center;gap:4px"><span class="num" style="width:auto">${String(i + 1).padStart(2, "0")}</span>
+                <span class="mv"><button data-mv="up" data-i="${i}">▲</button><button data-mv="dn" data-i="${i}">▼</button></span></div></td>
+              <td><input class="cell-in" type="text" data-f="name" data-i="${i}" value="${esc(s.name)}">
+                ${sd !== null && sd >= STALE_DAYS ? `<span class="tag stale">${sd}일째</span>` : ""}</td>
+              <td><input class="cell-in" type="date" data-f="start" data-i="${i}" value="${esc(s.start || "")}"></td>
+              <td><input class="cell-in" type="date" data-f="end" data-i="${i}" value="${esc(s.end || "")}"></td>
+              <td><span class="dd ${d.c}">${d.t}</span></td>
+              <td><select class="st ${stOf(s)}" data-f="status" data-i="${i}">
+                ${Object.keys(S).map(v => `<option value="${v}" ${stOf(s) === v ? "selected" : ""}>${S[v]}</option>`).join("")}</select></td>
+              <td>${ownBtn(s, key)}</td>
+              <td><input class="cell-in" type="text" data-f="memo" data-i="${i}" value="${esc(s.memo || "")}" placeholder="–"></td>
+              <td><button class="btn ghost" data-del="${i}">✕</button></td></tr>`; }).join("")
+            || `<tr><td colspan="9"><div class="empty">단계가 없습니다. 아래에서 추가하거나 '단계 불러오기'를 쓰세요.</div></td></tr>`}
+          </tbody></table></div>
+        <div class="addbar">
+          <input id="newStep" class="fld" placeholder="추가할 절차단계명" style="flex:1;min-width:170px">
+          <input id="newStepS" class="fld" type="date" style="width:145px" title="시작일">
+          <input id="newStepE" class="fld" type="date" style="width:145px" title="종료일">
+          <button id="addStep" class="btn primary">단계 추가</button>
+        </div>
+        <div class="hint">종료일만 입력하면 그날 하루짜리 일정으로 표시됩니다. 상태를 '진행중'으로 바꾸면 착수일이 기록되어 ${STALE_DAYS}일 이상 머물 때 정체 표시가 붙습니다.</div>
+      </div>
+    </div>`;
+  wireProj(p);
+}
+
+function wireProj(p){
+  const steps = p.steps || (p.steps = []);
+  $("#projDetail").querySelectorAll("input.cell-in").forEach(el => {
+    const ev = el.type === "date" ? "change" : "input";
+    el.addEventListener(ev, () => {
+      const s = steps[+el.dataset.i];
+      s[el.dataset.f] = el.value;
+      if (s.start && s.end && s.start > s.end){ el.dataset.f === "end" ? s.start = s.end : s.end = s.start; }
+      save(el.type === "date");
+      if (el.type === "date") renderProj();
+    });
+  });
+  $("#projDetail").querySelectorAll("select[data-f='status']").forEach(el => el.onchange = () => {
+    setStatus(steps[+el.dataset.i], el.value); save(true); renderProj();
+  });
+  $("#projDetail").querySelectorAll("[data-mv]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.i, j = b.dataset.mv === "up" ? i - 1 : i + 1;
+    if (j < 0 || j >= steps.length) return;
+    [steps[i], steps[j]] = [steps[j], steps[i]]; save(true); renderProj();
+  });
+  $("#projDetail").querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.del;
+    if (!confirm(`「${steps[i].name}」 단계를 삭제할까요?`)) return;
+    steps.splice(i, 1); save(true); renderProj();
+  });
+  const add = () => {
+    const n = $("#newStep").value.trim(); if (!n) return;
+    steps.push({id:uid8(), name:n, start:$("#newStepS").value || "", end:$("#newStepE").value || "", status:"todo", owners:[], memo:""});
+    save(true); renderProj();
+  };
+  $("#addStep").onclick = add;
+  $("#newStep").onkeydown = e => { if (e.key === "Enter") add(); };
+  $("#pTpl").onchange = e => { p.tplId = e.target.value; save(true); renderProj(); };
+  $("#pPeriod").onclick = () => { const v = prompt("기수 (예: 26Q2 반기, 26기말)", p.period || ""); if (v === null) return;
+    p.period = v.trim(); save(true); renderProj(); };
+  $("#pDel").onclick = () => {
+    if (!confirm(`「${projTitle(p)}」 프로젝트를 삭제할까요?`)) return;
+    DB.projects = DB.projects.filter(x => x.id !== p.id); selProj = null; save(true); renderProj();
+  };
+  $("#pLoad").onclick = () => {
+    const t = tplOf(p.tplId);
+    if (!t){ toast("먼저 절차 템플릿을 지정하세요"); return; }
+    const base = prompt(`「${t.name}」 기준일 (YYYY-MM-DD)\n각 단계 일정 = 기준일 + 시작(D+) / 기간(일)`, todayStr());
+    if (base === null) return;
+    if (!isDate(base)){ toast("YYYY-MM-DD 형식으로 입력하세요"); return; }
+    const keep = steps.length ? confirm(`기존 ${steps.length}개 단계를 유지하고 뒤에 추가할까요?\n[확인] 뒤에 추가  /  [취소] 교체`) : true;
+    const fresh = buildSteps(t, base);
+    p.steps = keep ? steps.concat(fresh) : fresh;
+    save(true); renderProj(); toast(`「${t.name}」 적용됨`);
+  };
+  $("#pClone").onclick = () => {
+    const period = prompt("새 기수 이름 (예: 26기말)", "");
+    if (period === null) return;
+    const shift = prompt("일정을 며칠 이동할까요? (예: 182 = 반년 뒤 / 비우면 일정 없이 복제)", "182");
+    if (shift === null) return;
+    const n = parseInt(shift, 10);
+    const np = {id:uid8(), coId:p.coId, tplId:p.tplId, period:period.trim(),
+      steps:steps.map(s => ({id:uid8(), name:s.name, owners:ownersOf(s).slice(), memo:"", status:"todo",
+        start:(isDate(s.start) && !isNaN(n)) ? addDays(s.start, n) : "",
+        end:(isDate(s.end) && !isNaN(n)) ? addDays(s.end, n) : ""}))};
+    DB.projects.push(np); selProj = np.id; save(true); renderProj(); toast("새 기수로 복제되었습니다");
+  };
+}
+
+const buildSteps = (t, base) => (t.steps || []).map(s => {
+  const off = (s.offset === "" || s.offset === null || s.offset === undefined) ? null : Number(s.offset) || 0;
+  const dur = (s.dur === "" || s.dur === null || s.dur === undefined) ? null : Math.max(1, Number(s.dur) || 1);
+  const st = off === null ? "" : addDays(base, off);
+  const en = off === null ? "" : addDays(base, off + (dur ? dur - 1 : 0));
+  return {id:uid8(), name:s.name, start:st, end:en, status:"todo", owners:[], memo:""};
+});
+
+$("#addCo").onclick = () => {
+  const n = $("#newCo").value.trim(); if (!n) return;
+  DB.companies.push({id:uid8(), name:n}); $("#newCo").value = ""; save(true); renderProj(); toast("회사가 등록되었습니다");
+};
+$("#newCo").onkeydown = e => { if (e.key === "Enter") $("#addCo").click(); };
+$("#addProj").onclick = () => {
+  const coId = $("#npCo").value; if (!coId){ toast("회사를 먼저 등록하세요"); return; }
+  const t = tplOf($("#npTpl").value);
+  const base = $("#npBase").value || todayStr();
+  const p = {id:uid8(), coId, tplId:t ? t.id : "", period:$("#npPeriod").value.trim(), steps:t ? buildSteps(t, base) : []};
+  DB.projects.push(p); selProj = p.id; $("#npPeriod").value = "";
+  save(true); renderProj(); toast("프로젝트가 생성되었습니다");
+};
+
+/* ===== 기준정보 ===== */
+function usedBy(name){
+  let n = 0;
+  DB.projects.forEach(p => (p.steps || []).forEach(s => { if (ownersOf(s).includes(name)) n++; }));
+  return n;
+}
+function renderBase(){
+  $("#memCount").textContent = DB.members.length + "명";
+  $("#memList").innerHTML = DB.members.length
+    ? DB.members.map((m, i) => `<div class="mem-item">${esc(m)}<span class="mini">${usedBy(m)}건</span>
+        <button data-mren="${i}" title="이름변경">✎</button><button data-mdel="${i}" title="삭제">✕</button></div>`).join("")
+    : `<div class="empty" style="padding:22px 16px">등록된 담당자가 없습니다.</div>`;
+  $$("[data-mren]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.mren, old = DB.members[i], n = prompt("담당자 이름", old);
+    if (!n || !n.trim() || n.trim() === old) return;
+    const nv = n.trim();
+    if (DB.members.includes(nv)){ toast("이미 있는 이름입니다"); return; }
+    DB.members[i] = nv;
+    DB.projects.forEach(p => (p.steps || []).forEach(s => { s.owners = ownersOf(s).map(o => o === old ? nv : o); }));
+    if (filters.owner === old) filters.owner = nv;
+    save(true); renderBase();
+  });
+  $$("[data-mdel]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.mdel, m = DB.members[i], n = usedBy(m);
+    if (!confirm(n ? `「${m}」을(를) 명단에서 지울까요?\n배정된 ${n}건의 표시는 그대로 남습니다.` : `「${m}」을(를) 지울까요?`)) return;
+    DB.members.splice(i, 1); save(true); renderBase();
+  });
+
+  $("#tplList").innerHTML = DB.templates.length
+    ? DB.templates.map(t => `<button class="side-item ${t.id === selTpl ? "on" : ""}" style="padding-left:14px;border-bottom:1px solid var(--rule2)" data-tpl="${t.id}">
+        ${esc(t.name)}<span class="mini">${(t.steps || []).length}단계</span></button>`).join("")
+    : `<div class="empty" style="padding:22px 16px">템플릿이 없습니다.</div>`;
+  $$("[data-tpl]").forEach(b => b.onclick = () => { selTpl = b.dataset.tpl; renderBase(); });
+
+  const t = tplOf(selTpl);
+  if (!t){ $("#tplDetail").innerHTML = `<div class="card"><div class="empty"><strong>템플릿을 선택하세요</strong>표준 절차를 만들어 두면 프로젝트 생성 시 일정까지 자동 계산됩니다.</div></div>`; return; }
+  $("#tplDetail").innerHTML = `
+    <div class="card">
+      <div class="card-h"><h3>${esc(t.name)}</h3>
+        <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">사용 중인 프로젝트 ${DB.projects.filter(p => p.tplId === t.id).length}건</span>
+        <button class="btn sm" id="renameTpl">이름변경</button><button class="btn sm ghost" id="delTpl">삭제</button></div>
+      <div class="card-b">
+        ${(t.steps || []).map((s, i) => `
+          <div class="step-row">
+            <span class="idx">${String(i + 1).padStart(2, "0")}</span>
+            <span class="mv"><button data-tmv="up" data-i="${i}">▲</button><button data-tmv="dn" data-i="${i}">▼</button></span>
+            <input class="cell-in" type="text" data-tf="name" data-i="${i}" value="${esc(s.name)}" style="flex:1;min-width:150px">
+            <span class="sub2">기준일 +</span>
+            <input class="cell-in" type="number" data-tf="offset" data-i="${i}" value="${esc(s.offset ?? "")}" placeholder="–" style="width:62px;font-family:var(--mono);text-align:right">
+            <span class="sub2">일 시작 ·</span>
+            <input class="cell-in" type="number" data-tf="dur" data-i="${i}" value="${esc(s.dur ?? "")}" placeholder="1" style="width:56px;font-family:var(--mono);text-align:right">
+            <span class="sub2">일간</span>
+            <button class="btn ghost" data-tdel="${i}">✕</button>
+          </div>`).join("") || `<div class="empty">단계가 없습니다.</div>`}
+        <div class="addbar">
+          <input id="newTStep" class="fld" placeholder="추가할 절차단계명" style="flex:1;min-width:160px">
+          <input id="newTOff" class="fld" type="number" placeholder="+시작일" style="width:96px">
+          <input id="newTDur" class="fld" type="number" placeholder="기간(일)" style="width:96px">
+          <button id="addTStep" class="btn primary">단계 추가</button>
+        </div>
+        <div class="hint">시작일수를 비우면 일정 없이 생성됩니다. 기간을 비우면 하루짜리로 계산합니다.<br>
+          매트릭스는 단계명으로 매칭하므로, 이름을 바꾸면 이미 만든 프로젝트와 열이 어긋납니다.</div>
+      </div>
+    </div>`;
+  const steps = t.steps || (t.steps = []);
+  $("#tplDetail").querySelectorAll("input.cell-in").forEach(el =>
+    el.addEventListener("input", () => { steps[+el.dataset.i][el.dataset.tf] = el.value; save(); }));
+  $("#tplDetail").querySelectorAll("[data-tmv]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.i, j = b.dataset.tmv === "up" ? i - 1 : i + 1;
+    if (j < 0 || j >= steps.length) return;
+    [steps[i], steps[j]] = [steps[j], steps[i]]; save(true); renderBase();
+  });
+  $("#tplDetail").querySelectorAll("[data-tdel]").forEach(b => b.onclick = () => { steps.splice(+b.dataset.tdel, 1); save(true); renderBase(); });
+  const addT = () => {
+    const n = $("#newTStep").value.trim(); if (!n) return;
+    steps.push({id:uid8(), name:n, offset:$("#newTOff").value, dur:$("#newTDur").value});
+    save(true); renderBase();
+  };
+  $("#addTStep").onclick = addT;
+  $("#newTStep").onkeydown = e => { if (e.key === "Enter") addT(); };
+  $("#renameTpl").onclick = () => { const n = prompt("템플릿명", t.name); if (n && n.trim()){ t.name = n.trim(); save(true); renderBase(); } };
+  $("#delTpl").onclick = () => {
+    const used = DB.projects.filter(p => p.tplId === t.id).length;
+    if (!confirm(`「${t.name}」 템플릿을 삭제할까요?${used ? `\n사용 중인 프로젝트 ${used}건은 '절차 미지정'이 됩니다.` : ""}`)) return;
+    DB.templates = DB.templates.filter(x => x.id !== t.id);
+    DB.projects.forEach(p => { if (p.tplId === t.id) p.tplId = ""; });
+    selTpl = null; save(true); renderBase();
+  };
+}
+$("#addTpl").onclick = () => {
+  const n = $("#newTpl").value.trim(); if (!n) return;
+  const t = {id:uid8(), name:n, steps:[]}; DB.templates.push(t); selTpl = t.id; $("#newTpl").value = "";
+  save(true); renderBase();
+};
+$("#newTpl").onkeydown = e => { if (e.key === "Enter") $("#addTpl").click(); };
+$("#addMem").onclick = () => {
+  const n = $("#newMem").value.trim(); if (!n) return;
+  if (DB.members.includes(n)){ toast("이미 있는 이름입니다"); return; }
+  DB.members.push(n); $("#newMem").value = ""; save(true); renderBase();
+};
+$("#newMem").onkeydown = e => { if (e.key === "Enter") $("#addMem").click(); };
+
+/* ===== 엑셀 ===== */
+const BD = {top:{style:"thin",color:{rgb:"D3DBE4"}}, bottom:{style:"thin",color:{rgb:"D3DBE4"}},
+            left:{style:"thin",color:{rgb:"D3DBE4"}}, right:{style:"thin",color:{rgb:"D3DBE4"}}};
+const ST = {
+  hdr:{fill:{fgColor:{rgb:"1B4B7A"}}, font:{color:{rgb:"FFFFFF"}, bold:true, sz:10}, alignment:{horizontal:"center", vertical:"center"}, border:BD},
+  base:{font:{sz:10}, alignment:{vertical:"center"}, border:BD},
+  center:{font:{sz:10}, alignment:{horizontal:"center", vertical:"center"}, border:BD},
+  co:{font:{sz:10, bold:true}, alignment:{vertical:"center"}, border:BD},
+  todo:{fill:{fgColor:{rgb:"F2F4F7"}}, font:{color:{rgb:"6B7885"}, sz:10, bold:true}, alignment:{horizontal:"center", vertical:"center"}, border:BD},
+  doing:{fill:{fgColor:{rgb:"FBF2E6"}}, font:{color:{rgb:"B96C15"}, sz:10, bold:true}, alignment:{horizontal:"center", vertical:"center"}, border:BD},
+  done:{fill:{fgColor:{rgb:"EAF5EF"}}, font:{color:{rgb:"26714E"}, sz:10, bold:true}, alignment:{horizontal:"center", vertical:"center"}, border:BD},
+  late:{fill:{fgColor:{rgb:"FDECE9"}}, font:{color:{rgb:"B3402F"}, sz:10, bold:true}, alignment:{horizontal:"center", vertical:"center"}, border:BD},
+  na:{fill:{fgColor:{rgb:"FAFBFC"}}, font:{color:{rgb:"C3CBD5"}, sz:10}, alignment:{horizontal:"center", vertical:"center"}, border:BD},
+  pct:{font:{sz:10, bold:true}, numFmt:"0%", alignment:{horizontal:"center", vertical:"center"}, border:BD}
+};
+const cellStyle = s => isLate(s) ? ST.late : ST[stOf(s)];
+
+function mkSheet(aoa, styles, cols){
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const rng = XLSX.utils.decode_range(ws["!ref"]);
+  for (let R = rng.s.r; R <= rng.e.r; R++)
+    for (let C = rng.s.c; C <= rng.e.c; C++){
+      const a = XLSX.utils.encode_cell({r:R, c:C});
+      if (!ws[a]) ws[a] = {t:"s", v:""};
+      ws[a].s = R === 0 ? ST.hdr : (styles(R, C) || ST.base);
+    }
+  ws["!cols"] = cols;
+  ws["!rows"] = [{hpt:22}];
+  ws["!autofilter"] = {ref:XLSX.utils.encode_range({s:{r:0,c:rng.s.c}, e:{r:0,c:rng.e.c}})};
+  return ws;
+}
+
+function exportXlsx(useFilter){
+  if (typeof XLSX === "undefined"){ toast("엑셀 라이브러리를 불러오지 못했습니다"); return; }
+  const rows = flatRows(useFilter);
+  if (!rows.length){ toast("추출할 데이터가 없습니다"); return; }
+  const wb = XLSX.utils.book_new(), sheets = [];
+  let src = visProjects();
+  if (useFilter){
+    if (filters.co) src = src.filter(p => p.coId === filters.co);
+    if (filters.tpl) src = src.filter(p => filters.tpl === "__none" ? (p.tplId || "") === "" : (p.tplId || "") === filters.tpl);
+  }
+
+  /* 1) 프로젝트 요약 */
+  const a1 = [["회사","기수","절차","전체단계","완료","진행중","미착수","지연","진행률","진행중 단계(동시)","기간","가장 이른 기한"]];
+  src.forEach(p => {
+    const k = cnt(p), runs = running(p);
+    const ds = (p.steps || []).map(s => s.start).filter(isDate).sort();
+    const de = (p.steps || []).map(s => dueOf(s)).filter(isDate).sort();
+    const next = (p.steps || []).filter(s => stOf(s) !== "done" && isDate(dueOf(s))).map(s => dueOf(s)).sort()[0] || "";
+    a1.push([coName(p.coId), p.period || "", tplName(p.tplId), k.all, k.done, k.doing, k.todo, k.late,
+             k.all ? k.done / k.all : 0,
+             runs.map(s => s.name + (ownersOf(s).length ? "(" + ownersOf(s).join("·") + ")" : "")).join(", "),
+             (ds[0] || de[0] || "") + (de.length ? " ~ " + de[de.length - 1] : ""), next]);
+  });
+  const ws1 = mkSheet(a1, (R, C) => {
+    if (C === 0) return ST.co;
+    if (C === 8) return ST.pct;
+    if (C === 7) return a1[R][7] > 0 ? ST.late : ST.center;
+    if (C >= 3 && C <= 6) return ST.center;
+    return ST.base;
+  }, [{wch:16},{wch:14},{wch:20},{wch:9},{wch:7},{wch:8},{wch:8},{wch:7},{wch:9},{wch:40},{wch:24},{wch:13}]);
+  XLSX.utils.book_append_sheet(wb, ws1, "프로젝트요약"); sheets.push(1);
+
+  /* 2) 진행현황 */
+  const a2 = [["회사","기수","절차","순번","절차단계","시작일","종료일","D-day","상태","담당자","경과(진행중)","비고"]];
+  rows.forEach(r => a2.push([r.co, r.period, tplName(r.tpl), r.no, r.s.name, r.s.start || "", r.s.end || "",
+    ddText(r.s).t, S[r.status], r.owners.join(", "), r.stale !== null ? r.stale + "일" : "", r.s.memo || ""]));
+  const ws2 = mkSheet(a2, (R, C) => {
+    const r = rows[R - 1];
+    if (C === 0) return ST.co;
+    if (C === 8) return cellStyle(r.s);
+    if (C === 7) return r.late ? ST.late : ST.center;
+    if (C === 3 || C === 5 || C === 6 || C === 10) return ST.center;
+    return ST.base;
+  }, [{wch:15},{wch:13},{wch:18},{wch:6},{wch:30},{wch:12},{wch:12},{wch:8},{wch:9},{wch:16},{wch:12},{wch:32}]);
+  XLSX.utils.book_append_sheet(wb, ws2, "진행현황"); sheets.push(1);
+
+  /* 3) 절차별 매트릭스 */
+  const used = ["프로젝트요약", "진행현황"];
+  const sheetName = base => {
+    let n = String(base).replace(/[\[\]:*?\/\\]/g, " ").trim().slice(0, 28) || "매트릭스";
+    let s = n, i = 2; while (used.includes(s)) s = n.slice(0, 26) + "_" + i++;
+    used.push(s); return s;
+  };
+  groupByTpl(src).forEach(([tid, list]) => {
+    const names = colsFor(tid, list); if (!names.length) return;
+    const meta = [], a3 = [["회사","기수"].concat(names).concat(["진행률"])];
+    list.forEach(p => {
+      const by = {}; (p.steps || []).forEach(s => { if (!by[s.name]) by[s.name] = s; });
+      const k = cnt(p);
+      a3.push([coName(p.coId), p.period || ""].concat(names.map(n => {
+        const s = by[n]; return s ? S[stOf(s)] + (dueOf(s) ? " " + md(dueOf(s)) : "") : "–";
+      })).concat([k.all ? k.done / k.all : 0]));
+      meta.push(by);
+    });
+    const ws3 = mkSheet(a3, (R, C) => {
+      if (C === 0) return ST.co;
+      if (C === 1) return ST.center;
+      if (C === names.length + 2) return ST.pct;
+      const s = meta[R - 1][names[C - 2]];
+      return s ? cellStyle(s) : ST.na;
+    }, [{wch:16},{wch:13}].concat(names.map(() => ({wch:13}))).concat([{wch:9}]));
+    XLSX.utils.book_append_sheet(wb, ws3, sheetName(tid ? tplName(tid) : "절차미지정"));
+    sheets.push(2);
+  });
+
+  const fname = "진행현황_" + todayStr().replace(/-/g, "") + ".xlsx";
+  const buf = XLSX.write(wb, {type:"array", bookType:"xlsx"});
+  if (typeof JSZip === "undefined"){ dl(new Blob([buf]), fname); toast("엑셀 추출 완료 (틀고정 제외)"); return; }
+  JSZip.loadAsync(buf).then(async zip => {
+    for (let i = 0; i < sheets.length; i++){
+      const path = "xl/worksheets/sheet" + (i + 1) + ".xml";
+      const f = zip.file(path); if (!f) continue;
+      let xml = await f.async("string");
+      const x = sheets[i];
+      const pane = `<sheetView workbookViewId="0"><pane xSplit="${x}" ySplit="1" `
+        + `topLeftCell="${XLSX.utils.encode_cell({r:1, c:x})}" activePane="bottomRight" state="frozen"/>`
+        + `<selection pane="bottomRight"/></sheetView>`;
+      zip.file(path, xml.replace('<sheetView workbookViewId="0"/>', pane));
+    }
+    return zip.generateAsync({type:"blob", compression:"DEFLATE"});
+  }).then(blob => { dl(blob, fname); toast("엑셀 추출 완료"); })
+    .catch(() => { dl(new Blob([buf]), fname); toast("엑셀 추출 완료 (틀고정 제외)"); });
+}
+function dl(blob, name){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+$$("[data-export]").forEach(b => b.onclick = () => exportXlsx(b.dataset.export === "filtered"));
+</script>
+</body>
+</html>
