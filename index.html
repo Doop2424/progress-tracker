@@ -168,11 +168,17 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
   width:100%; text-align:left; color:var(--ink2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .own:hover{border-color:var(--brand); color:var(--brand)}
 .own.none{color:var(--muted)}
-#ownPop{position:fixed; z-index:80; background:var(--paper); border:1px solid var(--rule); border-radius:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,.16); padding:8px; min-width:170px; max-height:260px; overflow-y:auto}
-#ownPop label{display:flex; align-items:center; gap:8px; padding:5px 7px; border-radius:5px; font-size:13px; cursor:pointer}
+#ownPop{position:fixed; z-index:80; background:var(--paper); border:1px solid var(--rule); border-radius:9px;
+  box-shadow:0 10px 28px rgba(0,0,0,.18); min-width:186px; overflow:hidden}
+#ownPop .pop-h{font-size:11px; font-weight:700; color:var(--muted); padding:9px 12px 7px; border-bottom:1px solid var(--rule2)}
+#ownPop .pop-b{padding:6px; max-height:230px; overflow-y:auto}
+#ownPop label{display:flex; align-items:center; gap:9px; padding:6px 8px; border-radius:5px; font-size:13px; cursor:pointer}
 #ownPop label:hover{background:var(--hover)}
-#ownPop .none{font-size:11.5px; color:var(--muted); padding:8px}
+#ownPop input[type=checkbox]{width:15px; height:15px; accent-color:var(--brand); margin:0}
+#ownPop .pop-f{display:flex; gap:6px; padding:8px; border-top:1px solid var(--rule2); background:var(--bg)}
+#ownPop .pop-f button{flex:1; border:1px solid var(--rule); background:var(--paper); border-radius:5px; padding:5px 8px; font-size:12px; font-weight:600; color:var(--ink2)}
+#ownPop .pop-f button[data-close]{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
+#ownPop .none{font-size:11.5px; color:var(--muted); padding:14px}
 
 /* 일괄 편집 바 */
 #bulk{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:55;
@@ -211,16 +217,20 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
 .gt-head{border-bottom:1px solid var(--rule)}
 .gt-head .gt-name{font-size:11px; color:var(--muted); font-weight:700}
 .gt-head .gt-track{height:26px}
-.gt-tick{position:absolute; top:0; bottom:0; border-left:1px solid var(--rule2)}
-.gt-tick span{position:absolute; top:5px; left:4px; font-family:var(--mono); font-size:9.5px; color:var(--muted); white-space:nowrap}
-.gt-today{position:absolute; top:0; bottom:0; width:2px; background:var(--danger); opacity:.55; z-index:3}
-.gt-bar{position:absolute; height:20px; border-radius:4px; padding:0 6px; font-size:11px; font-weight:600;
-  display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; border:1px solid; z-index:2}
+.gt-mo{position:absolute; top:0; bottom:0; border-left:1px solid var(--rule2)}
+.gt-mo.alt{background:var(--rule2); opacity:.55}
+.gt-head .gt-mo{opacity:1; display:flex; align-items:center; justify-content:center}
+.gt-head .gt-mo.alt{background:var(--rule2)}
+.gt-head .gt-mo span{font-size:11.5px; font-weight:700; color:var(--ink2)}
+.gt-head .gt-mo b{font-family:var(--mono); font-size:9.5px; color:var(--muted); font-weight:700}
+.gt-today{position:absolute; top:0; bottom:0; width:2px; background:var(--danger); opacity:.6; z-index:3}
+.gt-bar{position:absolute; height:19px; border-radius:9px; padding:0 8px; font-size:11px; font-weight:600;
+  display:flex; align-items:center; white-space:nowrap; overflow:hidden; border:1px solid; z-index:2}
 .gt-bar.todo{background:var(--todo-bg); border-color:var(--todo-bd); color:var(--ink2)}
 .gt-bar.doing{background:var(--doing-bg); border-color:var(--doing-bd); color:var(--doing)}
 .gt-bar.done{background:var(--done-bg); border-color:var(--done-bd); color:var(--done)}
 .gt-bar.late{background:var(--late-bg); border-color:var(--late-bd); color:var(--danger)}
-.gt-lbl{position:absolute; height:20px; display:flex; align-items:center; font-size:11px; color:var(--ink2); white-space:nowrap; z-index:2; padding-left:5px}
+.gt-lbl{position:absolute; height:19px; display:flex; align-items:center; font-size:11px; color:var(--ink2); white-space:nowrap; z-index:2}
 
 .board{display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; align-items:flex-start}
 .bcol{flex:0 0 268px; background:var(--paper); border:1px solid var(--rule); border-radius:9px}
@@ -748,48 +758,67 @@ function dashGantt(){
   const today = todayStr();
   let min = today, max = today;
   ps.forEach(p => (p.steps || []).forEach(s => {
-    const a = s.start || dueOf(s), b = dueOf(s);
+    const a = isDate(s.start) ? s.start : dueOf(s), b = dueOf(s);
     if (isDate(a) && a < min) min = a;
     if (isDate(b) && b > max) max = b;
   }));
-  const start = addDays(min, -7), end = addDays(max, 10);
-  const span = diffDays(end, start) + 1, dayW = 6, W = span * dayW;
-  let ticks = "";
-  for (let i = 0; i <= span; i += 7) ticks += `<div class="gt-tick" style="left:${i * dayW}px"><span>${md(addDays(start, i))}</span></div>`;
-  const todayX = diffDays(today, start) * dayW;
+
+  // 월 그리드 (앞뒤 한 달 여유)
+  const MW = 118;
+  const d0 = toD(min), d1 = toD(max);
+  const first = new Date(d0.getFullYear(), d0.getMonth() - 1, 1);
+  const last  = new Date(d1.getFullYear(), d1.getMonth() + 1, 1);
+  const months = [];
+  for (let d = new Date(first); d <= last; d.setMonth(d.getMonth() + 1))
+    months.push({y:d.getFullYear(), m:d.getMonth(), days:new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()});
+  const W = months.length * MW;
+  const xOf = str => {
+    const d = toD(str); if (!d) return 0;
+    const i = (d.getFullYear() - months[0].y) * 12 + (d.getMonth() - months[0].m);
+    if (i < 0) return 0;
+    if (i >= months.length) return W;
+    return i * MW + ((d.getDate() - 1) / months[i].days) * MW;
+  };
+  const grid = months.map((mo, i) => `<div class="gt-mo${i % 2 ? " alt" : ""}" style="left:${i * MW}px;width:${MW}px"></div>`).join("");
+  const head = months.map((mo, i) => `<div class="gt-mo${i % 2 ? " alt" : ""}" style="left:${i * MW}px;width:${MW}px">
+      <span>${(mo.m === 0 || i === 0) ? `<b>${String(mo.y).slice(2)}</b> ` : ""}${mo.m + 1}월</span></div>`).join("");
+  const todayX = xOf(today);
 
   const rows = ps.map(p => {
     const list = (p.steps || []).filter(s => isDate(dueOf(s))).map(s => {
       const a = isDate(s.start) ? s.start : dueOf(s), b = dueOf(s);
-      const x = diffDays(a, start) * dayW;
-      const w = Math.max(10, (diffDays(b, a) + 1) * dayW);
-      const label = [...s.name].length > 12 ? [...s.name].slice(0, 12).join("") + "…" : s.name;
-      return {s, x, w, label, lw:w >= 14 + [...label].length * 11 ? 0 : 12 + [...label].length * 11};
+      const x = xOf(a);
+      const w = Math.max(9, xOf(b) + MW / 31 - x);
+      const label = [...s.name].length > 14 ? [...s.name].slice(0, 14).join("") + "…" : s.name;
+      const inside = w >= 16 + [...label].length * 10.5;
+      return {s, x, w, label, inside, lw:inside ? 0 : 10 + [...label].length * 10.5};
     }).sort((a, b) => a.x - b.x);
     const lanes = [];
     list.forEach(it => {
-      const total = it.w + it.lw + 6;
       let li = lanes.findIndex(e => e <= it.x);
       if (li === -1){ lanes.push(0); li = lanes.length - 1; }
-      lanes[li] = it.x + total; it.lane = li;
+      lanes[li] = it.x + it.w + it.lw + 8; it.lane = li;
     });
     const bars = list.map(it => {
       const cls = isLate(it.s) ? "late" : stOf(it.s);
-      const top = it.lane * 24 + 6;
+      const top = it.lane * 25 + 8;
       const tip = `${esc(it.s.name)} · ${S[stOf(it.s)]} · ${periodText(it.s)}${ownersOf(it.s).length ? " · " + esc(ownersOf(it.s).join("·")) : ""}`;
-      return `<div class="gt-bar ${cls}" style="left:${it.x}px;top:${top}px;width:${it.w}px" title="${tip}">${it.lw ? "" : esc(it.label)}</div>`
-        + (it.lw ? `<div class="gt-lbl" style="left:${it.x + it.w}px;top:${top}px" title="${tip}">${esc(it.label)}</div>` : "");
+      return `<div class="gt-bar ${cls}" style="left:${it.x}px;top:${top}px;width:${it.w}px" title="${tip}">${it.inside ? esc(it.label) : ""}</div>`
+        + (it.inside ? "" : `<div class="gt-lbl" style="left:${it.x + it.w + 4}px;top:${top}px" title="${tip}">${esc(it.label)}</div>`);
     }).join("");
-    const h = Math.max(1, lanes.length) * 24 + 12;
-    return `<div class="gt-row"><div class="gt-name">${esc(coName(p.coId))}<span class="sub2">${esc(p.period || tplName(p.tplId))}</span></div>
-      <div class="gt-track" style="height:${h}px;width:${W}px">${ticks}<div class="gt-today" style="left:${todayX}px"></div>${bars}</div></div>`;
+    const k = cnt(p);
+    const h = Math.max(1, lanes.length) * 25 + 16;
+    return `<div class="gt-row"><div class="gt-name">${esc(coName(p.coId))}
+      <span class="sub2">${esc(p.period || tplName(p.tplId))} · ${k.pct}%</span></div>
+      <div class="gt-track" style="height:${h}px;width:${W}px">${grid}<div class="gt-today" style="left:${todayX}px"></div>${bars}</div></div>`;
   }).join("");
 
   $("#dashBody").innerHTML = `<div class="card">
-    <div class="card-h"><h3>타임라인</h3><span style="margin-left:auto;font-size:11.5px;color:var(--muted)">막대 = 시작일~종료일 · 붉은 세로선 = 오늘</span></div>
+    <div class="card-h"><h3>타임라인</h3>
+      <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">월 단위 · 막대 = 시작일~종료일 · 붉은 세로선 = 오늘</span></div>
     <div class="gantt"><div style="min-width:${W + 178}px">
       <div class="gt-row gt-head"><div class="gt-name">프로젝트</div>
-        <div class="gt-track" style="width:${W}px">${ticks}<div class="gt-today" style="left:${todayX}px"></div></div></div>
+        <div class="gt-track" style="width:${W}px;height:32px">${head}<div class="gt-today" style="left:${todayX}px"></div></div></div>
       ${rows}</div></div></div>`;
 }
 
@@ -817,40 +846,56 @@ function dashBoard(){
   $$("[data-goproj]").forEach(b => b.onclick = () => { selProj = b.dataset.goproj; goTab("proj"); });
 }
 
-/* ===== 담당자 선택 팝오버 ===== */
+/* ===== 담당자 선택 팝오버 (다중 선택) ===== */
 let popTarget = null;
 function ownLabel(list){ return list.length ? list.join(", ") : "담당자 –"; }
 function ownBtn(s, key){
   const os = ownersOf(s);
-  return `<button class="own ${os.length ? "" : "none"}" data-own="${key}" title="${esc(ownLabel(os))}">${esc(ownLabel(os))}</button>`;
+  return `<button type="button" class="own ${os.length ? "" : "none"}" data-own="${key}" title="${esc(ownLabel(os))}">${esc(ownLabel(os))}</button>`;
 }
 function closePop(){ const p = $("#ownPop"); if (p) p.remove(); popTarget = null; }
-document.addEventListener("click", e => {
-  const b = e.target.closest("[data-own]");
-  if (!b){ if (!e.target.closest("#ownPop")) closePop(); return; }
-  e.preventDefault(); e.stopPropagation();
-  if (popTarget === b){ closePop(); return; }
-  closePop(); popTarget = b;
-  const [pid, sid] = b.dataset.own.split("|");
+
+function openPop(btn){
+  closePop();
+  const [pid, sid] = btn.dataset.own.split("|");
   const p = projOf(pid); if (!p) return;
   const st = (p.steps || []).find(x => x.id === sid); if (!st) return;
   const cur = ownersOf(st);
+
   const pop = document.createElement("div");
   pop.id = "ownPop";
   pop.innerHTML = DB.members.length
-    ? DB.members.map(m => `<label><input type="checkbox" value="${esc(m)}" ${cur.includes(m) ? "checked" : ""}>${esc(m)}</label>`).join("")
+    ? `<div class="pop-h">여러 명 선택할 수 있습니다</div>`
+      + `<div class="pop-b">${DB.members.map(m =>
+          `<label><input type="checkbox" value="${esc(m)}" ${cur.includes(m) ? "checked" : ""}><span>${esc(m)}</span></label>`).join("")}</div>`
+      + `<div class="pop-f"><button type="button" data-clear>모두 해제</button><button type="button" data-close>완료</button></div>`
     : `<div class="none">기준정보 탭에서 담당자를 먼저 등록하세요.</div>`;
   document.body.appendChild(pop);
-  const r = b.getBoundingClientRect();
-  pop.style.left = Math.min(r.left, window.innerWidth - pop.offsetWidth - 12) + "px";
-  pop.style.top = (r.bottom + 6 + pop.offsetHeight > window.innerHeight ? r.top - pop.offsetHeight - 6 : r.bottom + 6) + "px";
-  pop.querySelectorAll("input").forEach(cb => cb.onchange = () => {
+
+  const r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+  pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + "px";
+  pop.style.top = (r.bottom + 6 + h > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
+
+  const apply = () => {
     const list = Array.from(pop.querySelectorAll("input:checked")).map(x => x.value);
     st.owners = list; save();
-    b.textContent = ownLabel(list); b.title = ownLabel(list);
-    b.classList.toggle("none", !list.length);
-  });
+    btn.textContent = ownLabel(list); btn.title = ownLabel(list);
+    btn.classList.toggle("none", !list.length);
+  };
+  pop.addEventListener("click", e => e.stopPropagation());
+  pop.addEventListener("change", e => { if (e.target.type === "checkbox") apply(); });
+  const cl = pop.querySelector("[data-clear]"), cd = pop.querySelector("[data-close]");
+  if (cl) cl.onclick = () => { pop.querySelectorAll("input").forEach(c => c.checked = false); apply(); };
+  if (cd) cd.onclick = () => { apply(); save(true); closePop(); };
+  popTarget = btn;
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-own]");
+  if (b){ e.preventDefault(); e.stopPropagation(); popTarget === b ? closePop() : openPop(b); return; }
+  if (!e.target.closest("#ownPop")) closePop();
 });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closePop(); });
 window.addEventListener("resize", closePop);
 
 /* ===== 진행표 ===== */
