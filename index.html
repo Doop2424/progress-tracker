@@ -594,7 +594,7 @@ function listen(){
     const d = snap.data() || {};
     const inc = {companies:d.companies || [], projects:d.projects || [], templates:d.templates || [], members:d.members || []};
     const key = snapKey(inc);
-    if (snap.metadata.hasPendingWrites || key === localKey){ localKey = key; return; }
+    if (snap.metadata.hasPendingWrites || key === localKey || saveT) return void (localKey = key);
     DB = inc; localKey = key;
     if (migrate()) save(true);
     if (selProj && !projOf(selProj)) selProj = null;
@@ -603,11 +603,12 @@ function listen(){
   }, e => toast("불러오기 실패: " + e.code));
 }
 
-let saveT;
+let saveT = null;
 function save(now){
   if (!docRef) return;
-  clearTimeout(saveT);
+  clearTimeout(saveT); saveT = null;
   const write = () => {
+    saveT = null;
     localKey = snapKey(DB);
     docRef.set({companies:DB.companies, projects:DB.projects, templates:DB.templates, members:DB.members,
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()}, {merge:true})
@@ -876,17 +877,29 @@ function openPop(btn){
   pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + "px";
   pop.style.top = (r.bottom + 6 + h > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
 
+  const key = btn.dataset.own;
   const apply = () => {
-    const list = Array.from(pop.querySelectorAll("input:checked")).map(x => x.value);
-    st.owners = list; save();
-    btn.textContent = ownLabel(list); btn.title = ownLabel(list);
-    btn.classList.toggle("none", !list.length);
+    const list = Array.from(pop.querySelectorAll("input[type=checkbox]")).filter(c => c.checked).map(c => c.value);
+    const [pid2, sid2] = key.split("|");
+    const pr = projOf(pid2); if (!pr) return;
+    const step = (pr.steps || []).find(x => x.id === sid2); if (!step) return;
+    step.owners = list; save(true);
+    const live = document.querySelector('[data-own="' + key + '"]');
+    if (live){
+      live.textContent = ownLabel(list);
+      live.title = ownLabel(list);
+      live.classList.toggle("none", !list.length);
+    }
   };
   pop.addEventListener("click", e => e.stopPropagation());
-  pop.addEventListener("change", e => { if (e.target.type === "checkbox") apply(); });
+  pop.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.onchange = apply;
+    cb.onclick = () => setTimeout(apply, 0);
+  });
+  pop.querySelectorAll("label").forEach(l => { l.onclick = () => setTimeout(apply, 0); });
   const cl = pop.querySelector("[data-clear]"), cd = pop.querySelector("[data-close]");
   if (cl) cl.onclick = () => { pop.querySelectorAll("input").forEach(c => c.checked = false); apply(); };
-  if (cd) cd.onclick = () => { apply(); save(true); closePop(); };
+  if (cd) cd.onclick = () => { apply(); closePop(); render(); };
   popTarget = btn;
 }
 
