@@ -176,7 +176,10 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
 #ownPop label:hover{background:var(--hover)}
 #ownPop input[type=checkbox]{width:15px; height:15px; accent-color:var(--brand); margin:0}
 #ownPop .pop-f{display:flex; gap:6px; padding:8px; border-top:1px solid var(--rule2); background:var(--bg)}
-#ownPop .pop-f button{flex:1; border:1px solid var(--rule); background:var(--paper); border-radius:5px; padding:5px 8px; font-size:12px; font-weight:600; color:var(--ink2)}
+#ownPop .pop-f.alt{padding-bottom:0; background:var(--bg)}
+#ownPop .pop-f button{flex:1; border:1px solid var(--rule); background:var(--paper); border-radius:5px; padding:5px 6px; font-size:12px; font-weight:600; color:var(--ink2)}
+#ownPop .pop-f button:hover:not([disabled]){border-color:var(--brand); color:var(--brand)}
+#ownPop .pop-f button[disabled]{opacity:.4; cursor:default}
 #ownPop .pop-f button[data-close]{background:var(--brand); border-color:var(--brand); color:var(--on-brand)}
 #ownPop .none{font-size:11.5px; color:var(--muted); padding:14px}
 
@@ -594,7 +597,9 @@ function listen(){
     const d = snap.data() || {};
     const inc = {companies:d.companies || [], projects:d.projects || [], templates:d.templates || [], members:d.members || []};
     const key = snapKey(inc);
-    if (snap.metadata.hasPendingWrites || key === localKey || saveT) return void (localKey = key);
+    // 저장 대기 중이거나 쓰기 응답이 아직 오지 않았으면, 서버 데이터로 덮어쓰지 않는다
+    if (snap.metadata.hasPendingWrites || saveT || inflight > 0) return;
+    if (key === localKey) return;
     DB = inc; localKey = key;
     if (migrate()) save(true);
     if (selProj && !projOf(selProj)) selProj = null;
@@ -603,16 +608,18 @@ function listen(){
   }, e => toast("불러오기 실패: " + e.code));
 }
 
-let saveT = null;
+let saveT = null, inflight = 0;
 function save(now){
   if (!docRef) return;
   clearTimeout(saveT); saveT = null;
   const write = () => {
     saveT = null;
     localKey = snapKey(DB);
+    inflight++;
     docRef.set({companies:DB.companies, projects:DB.projects, templates:DB.templates, members:DB.members,
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()}, {merge:true})
-      .catch(e => toast("저장 실패: " + e.code));
+      .catch(e => toast("저장 실패: " + e.code))
+      .finally(() => { inflight = Math.max(0, inflight - 1); });
   };
   now ? write() : (saveT = setTimeout(write, 900));
 }
@@ -848,7 +855,7 @@ function dashBoard(){
 }
 
 /* ===== 담당자 선택 팝오버 (다중 선택) ===== */
-let popTarget = null;
+let popTarget = null, ownClip = null;
 function ownLabel(list){ return list.length ? list.join(", ") : "담당자 –"; }
 function ownBtn(s, key){
   const os = ownersOf(s);
@@ -869,6 +876,11 @@ function openPop(btn){
     ? `<div class="pop-h">여러 명 선택할 수 있습니다</div>`
       + `<div class="pop-b">${DB.members.map(m =>
           `<label><input type="checkbox" value="${esc(m)}" ${cur.includes(m) ? "checked" : ""}><span>${esc(m)}</span></label>`).join("")}</div>`
+      + `<div class="pop-f alt">
+           <button type="button" data-copy title="이 담당자 구성을 복사">복사</button>
+           <button type="button" data-paste ${ownClip ? "" : "disabled"} title="${ownClip ? esc(ownLabel(ownClip)) : "복사된 담당자 없음"}">붙여넣기</button>
+           <button type="button" data-below title="이 단계 아래 모든 단계에 동일 적용">아래 전체</button>
+         </div>`
       + `<div class="pop-f"><button type="button" data-clear>모두 해제</button><button type="button" data-close>완료</button></div>`
     : `<div class="none">기준정보 탭에서 담당자를 먼저 등록하세요.</div>`;
   document.body.appendChild(pop);
@@ -878,12 +890,14 @@ function openPop(btn){
   pop.style.top = (r.bottom + 6 + h > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
 
   const key = btn.dataset.own;
+  const curList = () => Array.from(pop.querySelectorAll("input[type=checkbox]")).filter(c => c.checked).map(c => c.value);
+  const setChecks = list => pop.querySelectorAll("input[type=checkbox]").forEach(c => c.checked = list.includes(c.value));
   const apply = () => {
-    const list = Array.from(pop.querySelectorAll("input[type=checkbox]")).filter(c => c.checked).map(c => c.value);
+    const list = curList();
     const [pid2, sid2] = key.split("|");
     const pr = projOf(pid2); if (!pr) return;
     const step = (pr.steps || []).find(x => x.id === sid2); if (!step) return;
-    step.owners = list; save(true);
+    step.owners = list; save();
     const live = document.querySelector('[data-own="' + key + '"]');
     if (live){
       live.textContent = ownLabel(list);
@@ -897,8 +911,28 @@ function openPop(btn){
     cb.onclick = () => setTimeout(apply, 0);
   });
   pop.querySelectorAll("label").forEach(l => { l.onclick = () => setTimeout(apply, 0); });
-  const cl = pop.querySelector("[data-clear]"), cd = pop.querySelector("[data-close]");
-  if (cl) cl.onclick = () => { pop.querySelectorAll("input").forEach(c => c.checked = false); apply(); };
+
+  const q = s => pop.querySelector(s);
+  const cp = q("[data-copy]"), ps = q("[data-paste]"), bl = q("[data-below]"),
+        cl = q("[data-clear]"), cd = q("[data-close]");
+  if (cp) cp.onclick = () => {
+    ownClip = curList();
+    if (ps){ ps.disabled = false; ps.title = ownLabel(ownClip); }
+    toast(ownClip.length ? "복사됨: " + ownLabel(ownClip) : "빈 담당자로 복사됨");
+  };
+  if (ps) ps.onclick = () => { if (!ownClip) return; setChecks(ownClip); apply(); };
+  if (bl) bl.onclick = () => {
+    const list = curList();
+    const [pid2, sid2] = key.split("|");
+    const pr = projOf(pid2); if (!pr) return;
+    const idx = (pr.steps || []).findIndex(x => x.id === sid2);
+    const n = pr.steps.length - idx - 1;
+    if (n <= 0){ toast("아래에 단계가 없습니다"); return; }
+    if (!confirm(`아래 ${n}개 단계의 담당자를 [${ownLabel(list)}](으)로 바꿀까요?`)) return;
+    pr.steps.slice(idx + 1).forEach(s => s.owners = list.slice());
+    save(true); closePop(); render(); toast(`아래 ${n}개 단계에 적용됨`);
+  };
+  if (cl) cl.onclick = () => { setChecks([]); apply(); };
   if (cd) cd.onclick = () => { apply(); closePop(); render(); };
   popTarget = btn;
 }
