@@ -1021,8 +1021,11 @@ function dashBoard(){
 
 /* ===== 보고서 ===== */
 let repMode = "cat";   // cat = 구분별 / co = 회사별
+// 보고서 구성 옵션
+const rep = {sec:{sum:true, proj:true, up:true, cal:true}, excl:new Set(), horizon:0, detail:"todo", pick:false};
+const SEC_NAMES = {sum:"요약", proj:"프로젝트별", up:"향후 일정", cal:"인원별 일정표"};
 function dashReport(){
-  const ps = visProjects().slice().sort((a, b) => coName(a.coId).localeCompare(coName(b.coId)) || (a.period || "").localeCompare(b.period || ""));
+  const ps = visProjects().filter(p => !rep.excl.has(p.id)).sort((a, b) => coName(a.coId).localeCompare(coName(b.coId)) || (a.period || "").localeCompare(b.period || ""));
   const today = todayStr();
   const keyOf = p => repMode === "co" ? coName(p.coId) : catLabel(p);
   const groups = new Map();
@@ -1045,7 +1048,8 @@ function dashReport(){
     const doneNames = steps.filter(s => stOf(s) === "done").map(s => s.name);
     const runs = running(p), todo = steps.filter(s => stOf(s) !== "done");
     const strip = steps.map(s => `<i class="${isLate(s) ? "late" : stOf(s)}" title="${esc(s.name)} · ${S[stOf(s)]}"></i>`).join("") || "<i></i>";
-    const rows = todo.map(s => { const sc = schedOf(s);
+    const shown = rep.detail === "all" ? steps : rep.detail === "todo" ? todo : [];
+    const rows = shown.map(s => { const sc = schedOf(s);
       return `<tr><td class="rn" style="color:var(--muted)">${String(steps.indexOf(s) + 1).padStart(2, "0")}</td>
         <td style="font-weight:${stOf(s) === "doing" ? 700 : 500}">${esc(s.name)}</td>
         <td style="white-space:nowrap"><span class="badge ${stOf(s)}">${S[stOf(s)]}</span>${isLate(s) ? ` <span class="tag late">${ddText(s).t}</span>` : ""}</td>
@@ -1060,7 +1064,7 @@ function dashReport(){
       <div class="now"><span>완료 <b>${k.done}/${k.all}</b>${doneNames.length ? ` <span class="sub2">(~${esc(doneNames[doneNames.length - 1])})</span>` : ""}</span>
         <span>진행중 <b>${runs.length ? esc(runs.map(s => s.name).join(", ")) : "없음"}</b></span>
         <span>투입인원 <b>${esc(projOwners(p).join(", ")) || "미배정"}</b></span></div>
-      ${todo.length ? `<table><thead><tr><th style="width:36px">순번</th><th>향후 단계</th><th style="width:110px">상태</th><th style="width:118px">일정</th><th style="width:190px">담당</th><th>비고</th></tr></thead><tbody>${rows}</tbody></table>`
+      ${rep.detail === "none" ? "" : shown.length ? `<table><thead><tr><th style="width:36px">순번</th><th>${rep.detail === "all" ? "단계" : "향후 단계"}</th><th style="width:110px">상태</th><th style="width:118px">일정</th><th style="width:190px">담당</th><th>비고</th></tr></thead><tbody>${rows}</tbody></table>`
                     : `<div class="sub2">모든 단계 완료</div>`}
     </div>`;
   };
@@ -1071,6 +1075,8 @@ function dashReport(){
   // 향후 일정 (일정순)
   const up = [];
   ps.forEach(p => (p.steps || []).forEach(s => { if (stOf(s) === "done") return; const sc = schedOf(s); if (sc) up.push({p, s, sc}); }));
+  const limit = rep.horizon ? fromD(new Date(toD(today).getFullYear(), toD(today).getMonth() + rep.horizon, toD(today).getDate())) : "";
+  if (limit){ for (let i = up.length - 1; i >= 0; i--) if (up[i].sc.start > limit) up.splice(i, 1); }
   up.sort((a, b) => a.sc.start.localeCompare(b.sc.start) || a.sc.end.localeCompare(b.sc.end));
   const upRows = up.map(({p, s, sc}) => `<tr>
       <td class="mono ${sc.tent ? "tent" : ""}" style="white-space:nowrap">${sc.start === sc.end ? sc.start : sc.start + " ~ " + (sc.end.slice(0, 4) === sc.start.slice(0, 4) ? sc.end.slice(5) : sc.end)}</td>
@@ -1098,27 +1104,53 @@ function dashReport(){
     calSec = `<div class="rep-land" style="break-before:page;page-break-before:always"><div class="rep-sec" style="margin-top:0">4. 인원별 잔여 일정표</div>
       <div class="cal-leg" style="margin:0 0 10px">${legend}</div>${months.join("")}</div>`;
   }
-  const filt = [dash.co ? coName(dash.co) : "전체 회사", dash.cat || "전체 구분", hideDone ? "완료 프로젝트 제외" : ""].filter(Boolean).join(" · ");
+  const allVis = visProjects();
+  const filt = [dash.co ? coName(dash.co) : "전체 회사", dash.cat || "전체 구분", hideDone ? "완료 프로젝트 제외" : "",
+    rep.excl.size ? `${ps.length}/${allVis.length}건 선택` : "", rep.horizon ? `향후 ${rep.horizon}개월 일정` : ""].filter(Boolean).join(" · ");
+  // 섹션 번호는 켜진 것만 순서대로
+  let n = 0; const secT = (k, t) => rep.sec[k] ? `<div class="rep-sec">${++n}. ${t}</div>` : "";
+  const sumSec = rep.sec.sum ? secT("sum", "요약") + `<table><thead><tr><th>${repMode === "co" ? "회사" : "구분"}</th><th class="rn">프로젝트</th><th class="rn">전체단계</th><th class="rn">완료</th><th class="rn">진행중</th><th class="rn">지연</th><th class="rn">진행률</th></tr></thead><tbody>${sumRows}</tbody></table>` : "";
+  const projSec = rep.sec.proj ? secT("proj", "프로젝트별 진행현황 및 향후 계획") + (grpHtml || `<div class="empty">표시할 프로젝트가 없습니다.</div>`) : "";
+  const upSec = rep.sec.up ? secT("up", "향후 일정 (일정순)") + (up.length ? `<table><thead><tr><th style="width:19%">일정</th><th style="width:12%">회사</th><th style="width:18%">구분 · 기수</th><th>단계</th><th style="width:8%">상태</th><th style="width:21%">담당</th></tr></thead><tbody>${upRows}</tbody></table>`
+                  : `<div class="sub2">일정이 지정된 향후 단계가 없습니다.</div>`) : "";
+  if (rep.sec.cal && calSec){ n++; calSec = calSec.replace("4. 인원별 잔여 일정표", `${n}. 인원별 잔여 일정표`); } else calSec = "";
+  // 프로젝트 선택 패널 (회사별 묶음)
+  const pickPanel = rep.pick ? `<div class="card no-print" style="margin-bottom:12px"><div class="card-h"><h3>보고서에 포함할 프로젝트</h3>
+      <span class="sub2">${ps.length}/${allVis.length}건</span>
+      <div style="margin-left:auto;display:flex;gap:6px"><button class="btn sm" id="pkAll">전체 선택</button><button class="btn sm" id="pkNone">전체 해제</button></div></div>
+      <div class="card-b" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 16px;padding:12px 16px">
+      ${DB.companies.map(c => { const list = allVis.filter(p => p.coId === c.id); if (!list.length) return "";
+        return `<div><div style="font-size:11px;font-weight:800;color:var(--muted);margin:6px 0 3px">${esc(c.name)}</div>${list.map(p => `<label style="display:flex;align-items:center;gap:7px;font-size:12.5px;padding:3px 0;cursor:pointer">
+          <input type="checkbox" class="pk" data-p="${p.id}" ${rep.excl.has(p.id) ? "" : "checked"} style="accent-color:var(--brand)"> ${esc(p.period || tplName(p.tplId))} <span class="sub2">· ${esc(catLabel(p))}</span></label>`).join("")}</div>`; }).join("")}
+      </div></div>` : "";
+  const opt = (v, t, cur) => `<option value="${v}" ${String(cur) === String(v) ? "selected" : ""}>${t}</option>`;
   $("#dashBody").innerHTML = `
-    <div class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <div class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
       <div class="seg" id="repSeg"><button class="${repMode === "cat" ? "on" : ""}" data-m="cat">구분별</button><button class="${repMode === "co" ? "on" : ""}" data-m="co">회사별</button></div>
-      <span class="sub" style="font-size:12px;color:var(--muted)">회사·구분 필터는 상단에서 지정 · 일정은 시작·종료일이 입력된 단계만 반영</span>
+      <div class="chips" id="repSecs" title="포함할 섹션">${Object.keys(SEC_NAMES).map(k => `<button class="chip ${rep.sec[k] ? "on" : ""}" data-sec="${k}">${SEC_NAMES[k]}</button>`).join("")}</div>
+      <select id="repDetail" class="fld" style="width:auto;font-size:12px;padding:5px 9px" title="프로젝트 카드 상세도">
+        ${opt("todo", "카드: 향후 단계만", rep.detail)}${opt("all", "카드: 전체 단계", rep.detail)}${opt("none", "카드: 요약줄만", rep.detail)}</select>
+      <select id="repHorizon" class="fld" style="width:auto;font-size:12px;padding:5px 9px" title="향후 일정·일정표 범위">
+        ${opt(0, "일정: 전체", rep.horizon)}${opt(1, "일정: 향후 1개월", rep.horizon)}${opt(3, "일정: 향후 3개월", rep.horizon)}${opt(6, "일정: 향후 6개월", rep.horizon)}${opt(12, "일정: 향후 12개월", rep.horizon)}</select>
+      <button class="btn ${rep.excl.size ? "primary" : ""}" id="repPick">프로젝트 선택${rep.excl.size ? ` (${ps.length}/${allVis.length})` : ""}</button>
       <div style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="repXlsx">보고서 엑셀</button><button class="btn primary" id="repPrint">인쇄 · PDF 저장</button></div>
     </div>
+    ${pickPanel}
     <div class="rep">
       <div class="rep-h"><h3>프로젝트 진행현황 보고</h3>
         <div class="meta">기준일 ${today}<br>${esc(filt)} · 프로젝트 ${ps.length}건</div></div>
-      <div class="rep-sec">1. 요약</div>
-      <table><thead><tr><th>${repMode === "co" ? "회사" : "구분"}</th><th class="rn">프로젝트</th><th class="rn">전체단계</th><th class="rn">완료</th><th class="rn">진행중</th><th class="rn">지연</th><th class="rn">진행률</th></tr></thead>
-        <tbody>${sumRows}</tbody></table>
-      <div class="rep-sec">2. 프로젝트별 진행현황 및 향후 계획</div>
-      ${grpHtml || `<div class="empty">표시할 프로젝트가 없습니다.</div>`}
-      <div class="rep-sec">3. 향후 일정 (일정순)</div>
-      ${up.length ? `<table><thead><tr><th style="width:19%">일정</th><th style="width:12%">회사</th><th style="width:18%">구분 · 기수</th><th>단계</th><th style="width:8%">상태</th><th style="width:21%">담당</th></tr></thead><tbody>${upRows}</tbody></table>`
-                  : `<div class="sub2">일정이 지정된 향후 단계가 없습니다.</div>`}
-      ${calSec}
+      ${sumSec}${projSec}${upSec}${calSec}
+      ${!n ? `<div class="empty">포함할 섹션을 선택하세요.</div>` : ""}
     </div>`;
   $$("#repSeg button").forEach(b => b.onclick = () => { repMode = b.dataset.m; dashReport(); });
+  $$("#repSecs .chip").forEach(b => b.onclick = () => { rep.sec[b.dataset.sec] = !rep.sec[b.dataset.sec]; dashReport(); });
+  $("#repDetail").onchange = e => { rep.detail = e.target.value; dashReport(); };
+  $("#repHorizon").onchange = e => { rep.horizon = +e.target.value; dashReport(); };
+  $("#repPick").onclick = () => { rep.pick = !rep.pick; dashReport(); };
+  $$(".pk").forEach(cb => cb.onchange = () => { cb.checked ? rep.excl.delete(cb.dataset.p) : rep.excl.add(cb.dataset.p); dashReport(); });
+  const pa = $("#pkAll"), pnn = $("#pkNone");
+  if (pa) pa.onclick = () => { rep.excl.clear(); dashReport(); };
+  if (pnn) pnn.onclick = () => { allVis.forEach(p => rep.excl.add(p.id)); dashReport(); };
   $("#repPrint").onclick = () => window.print();
   $("#repXlsx").onclick = () => exportReport(ps, groups, up);
 }
@@ -1126,6 +1158,7 @@ function dashReport(){
 function exportReport(ps, groups, up){
   if (typeof XLSX === "undefined"){ toast("엑셀 라이브러리를 불러오지 못했습니다"); return; }
   if (!ps.length){ toast("추출할 데이터가 없습니다"); return; }
+  if (!Object.values(rep.sec).some(Boolean)){ toast("포함할 섹션을 선택하세요"); return; }
   const wb = XLSX.utils.book_new(), sheets = [];
   const hdr = repMode === "co" ? "회사" : "구분";
   /* 1) 요약 */
@@ -1135,7 +1168,7 @@ function exportReport(ps, groups, up){
     a1.push([k, list.length, t.all, t.done, t.doing, t.late, t.all ? t.done / t.all : 0]); });
   const ws1 = mkSheet(a1, (R, C) => C === 0 ? ST.co : C === 6 ? ST.pct : (C === 5 && a1[R][5] > 0) ? ST.late : ST.center,
     [{wch:18},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8},{wch:9}]);
-  XLSX.utils.book_append_sheet(wb, ws1, "요약"); sheets.push(1);
+  if (rep.sec.sum){ XLSX.utils.book_append_sheet(wb, ws1, "요약"); sheets.push(1); }
   /* 2) 프로젝트 현황 */
   const a2 = [["구분","회사","기수","절차","진행률","완료/전체","현재 진행중","다음 단계","다음 일정","투입인원","지연","비고(진행중·다음)"]];
   const meta2 = [];
@@ -1148,7 +1181,7 @@ function exportReport(ps, groups, up){
     meta2.push({late:k.late}); });
   const ws2 = mkSheet(a2, (R, C) => C === 1 ? ST.co : C === 4 ? ST.pct : (C === 5 || C === 8) ? ST.center : C === 10 ? (meta2[R - 1].late ? ST.late : ST.center) : ST.base,
     [{wch:14},{wch:14},{wch:18},{wch:18},{wch:8},{wch:9},{wch:28},{wch:24},{wch:22},{wch:30},{wch:6},{wch:36}]);
-  XLSX.utils.book_append_sheet(wb, ws2, "프로젝트현황"); sheets.push(2);
+  if (rep.sec.proj){ XLSX.utils.book_append_sheet(wb, ws2, "프로젝트현황"); sheets.push(2); }
   /* 3) 단계별 상세 (모든 단계) */
   const a3 = [["구분","회사","기수","순번","절차단계","상태","시작일","종료일","D-day","담당","비고"]];
   const meta3 = [];
@@ -1157,16 +1190,16 @@ function exportReport(ps, groups, up){
       ddText(s).t, ownersOf(s).join(", "), s.memo || ""]); meta3.push(s); }));
   const ws3 = mkSheet(a3, (R, C) => C === 1 ? ST.co : C === 5 ? cellStyle(meta3[R - 1]) : (C === 3 || C === 6 || C === 7) ? ST.center : C === 8 ? (isLate(meta3[R - 1]) ? ST.late : ST.center) : ST.base,
     [{wch:14},{wch:14},{wch:18},{wch:6},{wch:30},{wch:9},{wch:12},{wch:12},{wch:8},{wch:30},{wch:32}]);
-  XLSX.utils.book_append_sheet(wb, ws3, "단계별상세"); sheets.push(2);
+  if (rep.sec.proj && rep.detail !== "none"){ XLSX.utils.book_append_sheet(wb, ws3, "단계별상세"); sheets.push(2); }
   /* 4) 향후 일정 */
   const a4 = [["시작일","종료일","회사","구분","기수","단계","상태","담당","비고"]];
   const meta4 = [];
   up.forEach(({p, s, sc}) => { a4.push([sc.start, sc.end, coName(p.coId), catLabel(p), p.period || "", s.name, S[stOf(s)], ownersOf(s).join(", "), s.memo || ""]); meta4.push(s); });
   const ws4 = mkSheet(a4, (R, C) => C === 2 ? ST.co : C === 6 ? cellStyle(meta4[R - 1]) : (C <= 1) ? ST.center : ST.base,
     [{wch:12},{wch:12},{wch:14},{wch:14},{wch:18},{wch:30},{wch:9},{wch:30},{wch:32}]);
-  XLSX.utils.book_append_sheet(wb, ws4, "향후일정"); sheets.push(2);
+  if (rep.sec.up){ XLSX.utils.book_append_sheet(wb, ws4, "향후일정"); sheets.push(2); }
   /* 5) 인원별 캘린더 (월별 블록) */
-  if (up.length){
+  if (rep.sec.cal && up.length){
     const evs = up.map(({p, s, sc}) => ({p, s, start:sc.start, end:sc.end, tent:sc.tent, late:isLate(s), st:stOf(s)}));
     const t0 = toD(todayStr()), maxEnd = up.reduce((a, x) => x.sc.end > a ? x.sc.end : a, todayStr());
     const ms = [];
@@ -1179,10 +1212,11 @@ function exportReport(ps, groups, up){
   }
   /* 6) 월별 인원 배정 (텍스트) */
   const months = [];
+  if (!rep.sec.cal) up = [];
   up.forEach(({sc}) => { for (let d = new Date(toD(sc.start).getFullYear(), toD(sc.start).getMonth(), 1); d <= toD(sc.end); d.setMonth(d.getMonth() + 1)){
     const k = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); if (!months.includes(k)) months.push(k); } });
   months.sort();
-  if (months.length){
+  if (months.length && rep.sec.cal){
     const a5 = [["담당자"].concat(months.map(m => m.slice(2).replace("-", "년 ") + "월"))];
     const names = DB.members.slice(); up.forEach(({s}) => ownersOf(s).forEach(o => { if (!names.includes(o)) names.push(o); })); names.push("미배정");
     names.forEach(n => { const row = [n]; months.forEach(m => {
@@ -1193,6 +1227,7 @@ function exportReport(ps, groups, up){
       [{wch:12}].concat(months.map(() => ({wch:34}))));
     XLSX.utils.book_append_sheet(wb, ws5, "월별인원배정"); sheets.push(1);
   }
+  if (!sheets.length){ toast("추출할 시트가 없습니다"); return; }
   writeWb(wb, "진행현황보고_" + todayStr().replace(/-/g, "") + ".xlsx", sheets);
 }
 
