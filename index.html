@@ -629,12 +629,8 @@ const parseTent = memo => {
   const f = d => y + "-" + String(mo).padStart(2, "0") + "-" + String(d).padStart(2, "0");
   return {start:f(a), end:f(b), tent:true};
 };
-// 확정 일정(시작·종료일) 우선, 없으면 비고에서 임시 일정 해석. 완료 단계는 확정 일정만.
-const schedOf = s => {
-  if (isDate(dueOf(s))) return {start:isDate(s.start) ? s.start : dueOf(s), end:dueOf(s), tent:false};
-  if (stOf(s) === "done") return null;
-  return parseTent(s.memo);
-};
+// 일정 = 시작·종료일이 입력된 단계만 (비고의 "예정: ○월" 문구는 해석하지 않음)
+const schedOf = s => isDate(dueOf(s)) ? {start:isDate(s.start) ? s.start : dueOf(s), end:dueOf(s), tent:false} : null;
 const schedText = sc => !sc ? "–" : (sc.start !== sc.end ? md(sc.start) + "~" + md(sc.end) : md(sc.end));
 
 /* 담당자 1글자 약칭 (성 겹치면 2글자) */
@@ -1098,7 +1094,7 @@ function dashReport(){
       months.push(`<div class="rep-cal"><div class="rep-cal-h">${d.getFullYear()}년 ${d.getMonth() + 1}월 <span class="sub2">${mEvs.length}건</span></div>${personCalHtml(d.getFullYear(), d.getMonth(), mEvs, true)}</div>`);
     }
     const legend = usedCo.map(id => { const c = coColor(coIdx[id] || 0); return `<span><i style="background:${c.bg};border-color:${c.bd}"></i>${esc(coName(id))}</span>`; }).join("")
-      + `<span style="margin-left:auto"><i style="border:1px dashed var(--muted)"></i>점선·기울임 = 임시 일정 · 왼쪽 붉은 선 = 지연</span>`;
+      + `<span style="margin-left:auto">왼쪽 붉은 선 = 지연</span>`;
     calSec = `<div class="rep-land" style="break-before:page;page-break-before:always"><div class="rep-sec" style="margin-top:0">4. 인원별 잔여 일정표</div>
       <div class="cal-leg" style="margin:0 0 10px">${legend}</div>${months.join("")}</div>`;
   }
@@ -1106,7 +1102,7 @@ function dashReport(){
   $("#dashBody").innerHTML = `
     <div class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
       <div class="seg" id="repSeg"><button class="${repMode === "cat" ? "on" : ""}" data-m="cat">구분별</button><button class="${repMode === "co" ? "on" : ""}" data-m="co">회사별</button></div>
-      <span class="sub" style="font-size:12px;color:var(--muted)">회사·구분 필터는 상단에서 지정 · <i>기울임</i> = 비고의 "예정: ○월"을 해석한 임시 일정</span>
+      <span class="sub" style="font-size:12px;color:var(--muted)">회사·구분 필터는 상단에서 지정 · 일정은 시작·종료일이 입력된 단계만 반영</span>
       <div style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="repXlsx">보고서 엑셀</button><button class="btn primary" id="repPrint">인쇄 · PDF 저장</button></div>
     </div>
     <div class="rep">
@@ -1141,34 +1137,34 @@ function exportReport(ps, groups, up){
     [{wch:18},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8},{wch:9}]);
   XLSX.utils.book_append_sheet(wb, ws1, "요약"); sheets.push(1);
   /* 2) 프로젝트 현황 */
-  const a2 = [["구분","회사","기수","절차","진행률","완료/전체","현재 진행중","다음 단계","다음 일정","일정 성격","투입인원","지연","비고(진행중·다음)"]];
+  const a2 = [["구분","회사","기수","절차","진행률","완료/전체","현재 진행중","다음 단계","다음 일정","투입인원","지연","비고(진행중·다음)"]];
   const meta2 = [];
   ps.forEach(p => { const k = cnt(p), steps = p.steps || [], runs = running(p);
     const next = steps.find(s => stOf(s) === "todo"), sc = next ? schedOf(next) : null;
     const memo = steps.filter(s => stOf(s) !== "done").slice(0, 3).map(s => s.memo).filter(Boolean).join(" / ");
     a2.push([catLabel(p), coName(p.coId), p.period || "", tplName(p.tplId), k.all ? k.done / k.all : 0, `${k.done}/${k.all}`,
       runs.map(s => s.name).join(", "), next ? next.name : (runs.length ? "" : "완료"), sc ? (sc.start === sc.end ? sc.start : sc.start + " ~ " + sc.end) : "",
-      sc ? (sc.tent ? "예정(임시)" : "확정") : "", projOwners(p).join(", "), k.late, memo]);
+      projOwners(p).join(", "), k.late, memo]);
     meta2.push({late:k.late}); });
-  const ws2 = mkSheet(a2, (R, C) => C === 1 ? ST.co : C === 4 ? ST.pct : (C === 5 || C === 8 || C === 9) ? ST.center : C === 11 ? (meta2[R - 1].late ? ST.late : ST.center) : ST.base,
-    [{wch:14},{wch:14},{wch:18},{wch:18},{wch:8},{wch:9},{wch:28},{wch:24},{wch:22},{wch:10},{wch:30},{wch:6},{wch:36}]);
+  const ws2 = mkSheet(a2, (R, C) => C === 1 ? ST.co : C === 4 ? ST.pct : (C === 5 || C === 8) ? ST.center : C === 10 ? (meta2[R - 1].late ? ST.late : ST.center) : ST.base,
+    [{wch:14},{wch:14},{wch:18},{wch:18},{wch:8},{wch:9},{wch:28},{wch:24},{wch:22},{wch:30},{wch:6},{wch:36}]);
   XLSX.utils.book_append_sheet(wb, ws2, "프로젝트현황"); sheets.push(2);
   /* 3) 단계별 상세 (모든 단계) */
-  const a3 = [["구분","회사","기수","순번","절차단계","상태","일정 시작","일정 종료","일정 성격","D-day","담당","비고"]];
+  const a3 = [["구분","회사","기수","순번","절차단계","상태","시작일","종료일","D-day","담당","비고"]];
   const meta3 = [];
   ps.forEach(p => (p.steps || []).forEach((s, i) => { const sc = schedOf(s);
     a3.push([catLabel(p), coName(p.coId), p.period || "", i + 1, s.name, S[stOf(s)], sc ? sc.start : "", sc ? sc.end : "",
-      sc ? (sc.tent ? "예정(임시)" : "확정") : "", ddText(s).t, ownersOf(s).join(", "), s.memo || ""]); meta3.push(s); }));
-  const ws3 = mkSheet(a3, (R, C) => C === 1 ? ST.co : C === 5 ? cellStyle(meta3[R - 1]) : (C === 3 || C === 6 || C === 7 || C === 8) ? ST.center : C === 9 ? (isLate(meta3[R - 1]) ? ST.late : ST.center) : ST.base,
-    [{wch:14},{wch:14},{wch:18},{wch:6},{wch:30},{wch:9},{wch:12},{wch:12},{wch:10},{wch:8},{wch:30},{wch:32}]);
+      ddText(s).t, ownersOf(s).join(", "), s.memo || ""]); meta3.push(s); }));
+  const ws3 = mkSheet(a3, (R, C) => C === 1 ? ST.co : C === 5 ? cellStyle(meta3[R - 1]) : (C === 3 || C === 6 || C === 7) ? ST.center : C === 8 ? (isLate(meta3[R - 1]) ? ST.late : ST.center) : ST.base,
+    [{wch:14},{wch:14},{wch:18},{wch:6},{wch:30},{wch:9},{wch:12},{wch:12},{wch:8},{wch:30},{wch:32}]);
   XLSX.utils.book_append_sheet(wb, ws3, "단계별상세"); sheets.push(2);
   /* 4) 향후 일정 */
-  const a4 = [["일정 시작","일정 종료","일정 성격","회사","구분","기수","단계","상태","담당","비고"]];
+  const a4 = [["시작일","종료일","회사","구분","기수","단계","상태","담당","비고"]];
   const meta4 = [];
-  up.forEach(({p, s, sc}) => { a4.push([sc.start, sc.end, sc.tent ? "예정(임시)" : "확정", coName(p.coId), catLabel(p), p.period || "", s.name, S[stOf(s)], ownersOf(s).join(", "), s.memo || ""]); meta4.push(s); });
-  const ws4 = mkSheet(a4, (R, C) => C === 3 ? ST.co : C === 7 ? cellStyle(meta4[R - 1]) : (C <= 2) ? ST.center : ST.base,
-    [{wch:12},{wch:12},{wch:10},{wch:14},{wch:14},{wch:18},{wch:30},{wch:9},{wch:30},{wch:32}]);
-  XLSX.utils.book_append_sheet(wb, ws4, "향후일정"); sheets.push(3);
+  up.forEach(({p, s, sc}) => { a4.push([sc.start, sc.end, coName(p.coId), catLabel(p), p.period || "", s.name, S[stOf(s)], ownersOf(s).join(", "), s.memo || ""]); meta4.push(s); });
+  const ws4 = mkSheet(a4, (R, C) => C === 2 ? ST.co : C === 6 ? cellStyle(meta4[R - 1]) : (C <= 1) ? ST.center : ST.base,
+    [{wch:12},{wch:12},{wch:14},{wch:14},{wch:18},{wch:30},{wch:9},{wch:30},{wch:32}]);
+  XLSX.utils.book_append_sheet(wb, ws4, "향후일정"); sheets.push(2);
   /* 5) 인원별 캘린더 (월별 블록) */
   if (up.length){
     const evs = up.map(({p, s, sc}) => ({p, s, start:sc.start, end:sc.end, tent:sc.tent, late:isLate(s), st:stOf(s)}));
@@ -1191,7 +1187,7 @@ function exportReport(ps, groups, up){
     const names = DB.members.slice(); up.forEach(({s}) => ownersOf(s).forEach(o => { if (!names.includes(o)) names.push(o); })); names.push("미배정");
     names.forEach(n => { const row = [n]; months.forEach(m => {
       const items = up.filter(({s, sc}) => (ownersOf(s).includes(n) || (n === "미배정" && !ownersOf(s).length)) && sc.start.slice(0, 7) <= m && sc.end.slice(0, 7) >= m)
-        .map(({p, s, sc}) => coName(p.coId) + " " + s.name + (sc.tent ? "(예정)" : ""));
+        .map(({p, s}) => coName(p.coId) + " " + s.name);
       row.push(items.join("\n")); }); if (row.slice(1).some(Boolean)) a5.push(row); });
     const ws5 = mkSheet(a5, (R, C) => C === 0 ? ST.co : {font:{sz:10}, alignment:{vertical:"top", wrapText:true}, border:BD},
       [{wch:12}].concat(months.map(() => ({wch:34}))));
@@ -1233,7 +1229,7 @@ function personCalSheet(months, evs){
               border:e.tent ? {top:{style:"dashed", color:{rgb:hslHex(h, 45, 55)}}, bottom:{style:"dashed", color:{rgb:hslHex(h, 45, 55)}}, left:{style:"dashed", color:{rgb:hslHex(h, 45, 55)}}, right:{style:"dashed", color:{rgb:hslHex(h, 45, 55)}}}
                            : {...bd, left:e.late ? {style:"thick", color:{rgb:"B3402F"}} : bd.left}};
             if (!e.tent) st.fill = {fgColor:{rgb:hslHex(h, 60, 92)}};
-            const label = coName(e.p.coId) + " " + e.s.name + (e.tent ? " (예정)" : "");
+            const label = coName(e.p.coId) + " " + e.s.name;
             put(r, d, label, st); for (let k = 1; k < span; k++) put(r, d + k, "", st);
             if (span > 1) merges.push({s:{r, c:d}, e:{r, c:d + span - 1}});
             d += span - 1;
@@ -1253,11 +1249,11 @@ function personCalSheet(months, evs){
 }
 
 /* ===== 캘린더 ===== */
-let calYm = null, calOwners = new Set(), calTent = true, calMode = "grid";
+let calYm = null, calOwners = new Set(), calMode = "grid";
 function calEvents(){
   const evs = [];
   visProjects().forEach(p => (p.steps || []).forEach(s => {
-    const sc = schedOf(s); if (!sc || (sc.tent && !calTent)) return;
+    const sc = schedOf(s); if (!sc) return;
     const os = ownersOf(s);
     if (calOwners.size && !(os.some(o => calOwners.has(o)) || (calOwners.has("__none") && !os.length))) return;
     evs.push({p, s, start:sc.start, end:sc.end, tent:sc.tent, late:isLate(s), st:stOf(s)});
@@ -1353,7 +1349,7 @@ function dashCal(){
     .concat([`<button class="chip ${calOwners.has("__none") ? "on" : ""}" data-own="__none">미배정</button>`]).join("");
   const usedCo = []; monthEvs.forEach(e => { if (!usedCo.includes(e.p.coId)) usedCo.push(e.p.coId); });
   const legend = usedCo.map(id => { const c = coColor(coIdx[id] || 0); return `<span><i style="background:${c.bg};border-color:${c.bd}"></i>${esc(coName(id))}</span>`; }).join("")
-    + `<span style="margin-left:auto"><i style="border:1px dashed var(--muted)"></i>점선 = 비고의 "예정: ○월" 임시 일정${calMode === "grid" ? " · 약칭 = 담당자" : " · 왼쪽 붉은 선 = 지연"}</span>`;
+    + `<span style="margin-left:auto">${calMode === "grid" ? "약칭 = 담당자" : "왼쪽 붉은 선 = 지연"} · 시작·종료일이 입력된 단계만 표시</span>`;
   const listRows = monthEvs.slice().sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end)).map(e => `<tr>
       <td class="mono ${e.tent ? "tent" : ""}" style="white-space:nowrap">${e.start === e.end ? md(e.start) : md(e.start) + "~" + md(e.end)}</td>
       <td style="font-weight:600;white-space:nowrap">${esc(coName(e.p.coId))}</td><td class="sub2">${esc(catLabel(e.p))}${e.p.period ? " · " + esc(e.p.period) : ""}</td>
@@ -1367,8 +1363,7 @@ function dashCal(){
         <button class="btn sm" id="calToday">오늘</button>
         <div class="seg" id="calModeSeg"><button class="${calMode === "grid" ? "on" : ""}" data-m="grid">월 달력</button><button class="${calMode === "person" ? "on" : ""}" data-m="person">인원별</button></div>
         <div class="chips" id="calOwn" style="flex-wrap:wrap;margin-left:8px">${chips}</div>
-        <label style="margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px"><input type="checkbox" id="calTent" ${calTent ? "checked" : ""}> 임시일정 표시</label>
-        <button class="btn sm" id="calPrint">인쇄</button>
+        <button class="btn sm" id="calPrint" style="margin-left:auto">인쇄</button>
       </div>
       <div class="card-b" style="padding:14px 16px">
         <div class="rep-h" style="display:none"></div>
@@ -1384,7 +1379,6 @@ function dashCal(){
   $("#calPrev").onclick = () => { calYm = {y:m === 0 ? y - 1 : y, m:m === 0 ? 11 : m - 1}; dashCal(); };
   $("#calNext").onclick = () => { calYm = {y:m === 11 ? y + 1 : y, m:m === 11 ? 0 : m + 1}; dashCal(); };
   $("#calToday").onclick = () => { calYm = null; dashCal(); };
-  $("#calTent").onchange = e => { calTent = e.target.checked; dashCal(); };
   $$("#calModeSeg button").forEach(b => b.onclick = () => { calMode = b.dataset.m; dashCal(); });
   $("#calPrint").onclick = () => window.print();
   $$("#calOwn .chip").forEach(b => b.onclick = () => {
