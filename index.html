@@ -278,6 +278,70 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
   font-weight:600; opacity:0; transition:opacity .18s,transform .18s; pointer-events:none; z-index:90}
 #toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
 
+/* 보고서 */
+.rep{background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:26px 30px}
+.rep-h{display:flex; align-items:flex-end; gap:14px; border-bottom:2px solid var(--ink); padding-bottom:10px; margin-bottom:14px}
+.rep-h h3{margin:0; font-size:19px; letter-spacing:-.01em}
+.rep-h .meta{margin-left:auto; text-align:right; font-size:11.5px; color:var(--muted); line-height:1.55}
+.rep-sec{font-size:13px; font-weight:800; margin:22px 0 8px; padding-left:9px; border-left:3px solid var(--brand)}
+.rep table{font-size:12px; table-layout:fixed}
+.rep .rep-proj table td:nth-child(2),.rep .rep-proj table td:nth-child(6){white-space:normal; word-break:keep-all}
+.rep th{font-size:10.5px; padding:6px 8px; background:var(--bg)}
+.rep td{padding:5px 8px}
+.rep tbody tr:hover{background:transparent}
+.rn{text-align:right; font-family:var(--mono); font-size:11.5px}
+.rep-grp{margin-top:16px}
+.rep-grp h4{margin:0 0 8px; font-size:14px; display:flex; align-items:center; gap:8px}
+.rep-grp h4 .c{font-size:11px; color:var(--muted); font-weight:600}
+.rep-proj{border:1px solid var(--rule); border-radius:7px; padding:12px 14px; margin-bottom:10px; break-inside:avoid; page-break-inside:avoid}
+.rep-proj .top{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:7px}
+.rep-proj .nm{font-size:14px; font-weight:700}
+.rep-proj .pct{margin-left:auto; font-family:var(--mono); font-weight:700; color:var(--brand)}
+.rep-proj .now{font-size:12px; color:var(--ink2); margin:8px 0 7px; display:flex; gap:16px; flex-wrap:wrap}
+.rep-proj .now b{color:var(--ink)}
+.tent{color:var(--muted); font-style:italic}
+.tent::after{content:" 예정"; font-size:10px; font-style:normal}
+
+/* 캘린더 */
+.cal-tools{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+.cal-ym{font-size:16px; font-weight:800; min-width:112px; text-align:center}
+.cal{border:1px solid var(--rule); border-radius:9px; overflow:hidden; background:var(--paper)}
+.cal-dow{display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--rule)}
+.cal-dow div{padding:7px 0; text-align:center; font-size:11px; font-weight:700; color:var(--muted)}
+.cal-dow div:first-child{color:var(--danger)} .cal-dow div:last-child{color:var(--brand)}
+.cal-wk{position:relative; display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--rule2)}
+.cal-wk:last-child{border-bottom:none}
+.cal-d{border-right:1px solid var(--rule2); padding:4px 6px}
+.cal-d:last-child{border-right:none}
+.cal-d.out{background:var(--bg)} .cal-d.out .n{opacity:.45}
+.cal-d.we{background:var(--hover)}
+.cal-d .n{font-family:var(--mono); font-size:11px; font-weight:700; color:var(--muted)}
+.cal-d.today .n{background:var(--brand); color:var(--on-brand); border-radius:10px; padding:0 6px}
+.cal-ev{position:absolute; height:20px; border-radius:4px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px;
+  padding:0 6px; white-space:nowrap; overflow:hidden; border:1px solid; cursor:pointer; z-index:2; text-align:left}
+.cal-ev .t{overflow:hidden; text-overflow:ellipsis}
+.cal-ev .o{font-family:var(--mono); font-size:10px; opacity:.85; margin-left:auto; flex:none}
+.cal-ev.tent{border-style:dashed; background:var(--paper) !important}
+.cal-ev.done{opacity:.4}
+.cal-ev.late{box-shadow:inset 0 0 0 1px var(--danger)}
+.cal-ev:hover{filter:brightness(.95)}
+.cal-leg{display:flex; gap:12px; flex-wrap:wrap; font-size:11.5px; color:var(--ink2); margin-top:10px}
+.cal-leg i{display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-2px; margin-right:4px; border:1px solid}
+
+@media print{
+  :root, :root[data-theme="dark"]{ color-scheme:light;
+    --ink:#111C2B; --ink2:#3A4A5F; --muted:#6B7A8E; --paper:#FFFFFF; --bg:#F3F5F8; --rule:#C9D1DB; --rule2:#E2E7EE; --hover:#FFFFFF;
+    --brand:#1B4B7A; --brand-soft:#E4EDF6; --on-brand:#FFFFFF; --todo:#8A98A8; --doing:#B96C15; --done:#26714E; --danger:#B3402F;
+    --todo-bg:#F2F4F7; --todo-bd:#DCE2E9; --doing-bg:#FBF2E6; --doing-bd:#EFD9BC; --done-bg:#EAF5EF; --done-bd:#BFDCCD; --late-bg:#FDECE9; --late-bd:#F0C9C1 }
+  @page{ size:A4; margin:14mm 12mm }
+  header, .view-head, #toast, #bulk, .no-print, #gate{display:none !important}
+  body{background:#fff; font-size:12px}
+  main{max-width:none; padding:0}
+  .rep{border:none; padding:0}
+  .cal-d{min-height:70px !important}
+  a[href]::after{content:""}
+}
+
 @media (max-width:900px){
   .stats{grid-template-columns:repeat(2,1fr)}
   .split{grid-template-columns:1fr}
@@ -326,7 +390,11 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
         <button data-s="matrix">매트릭스</button>
         <button data-s="gantt">타임라인</button>
         <button data-s="board">진행중 보드</button>
+        <button data-s="report">보고서</button>
+        <button data-s="cal">캘린더</button>
       </div>
+      <select id="dCo" class="fld" style="width:auto;font-size:12px;padding:5px 9px" title="회사"></select>
+      <select id="dCat" class="fld" style="width:auto;font-size:12px;padding:5px 9px" title="구분"></select>
       <div class="sp">
         <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px">
           <input type="checkbox" id="hideDone"> 완료 프로젝트 숨김</label>
@@ -344,6 +412,7 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
     <div class="card">
       <div class="filters">
         <div class="f"><label class="lbl" for="fCo">회사</label><select id="fCo" class="fld"></select></div>
+        <div class="f"><label class="lbl" for="fCat">구분</label><select id="fCat" class="fld"></select></div>
         <div class="f"><label class="lbl" for="fTpl">절차</label><select id="fTpl" class="fld"></select></div>
         <div class="f"><label class="lbl" for="fOwner">담당자</label><select id="fOwner" class="fld"></select></div>
         <div class="f"><label class="lbl" for="fSort">정렬</label>
@@ -391,7 +460,9 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
   </section>
 
   <section id="v-base" class="hide">
-    <div class="view-head"><h2>기준정보</h2><span class="sub">절차 템플릿 · 담당자 명단</span></div>
+    <div class="view-head"><h2>기준정보</h2><span class="sub">절차 템플릿 · 담당자 명단 · 구분</span>
+      <div class="sp"><button class="btn" id="bkExport">백업 (JSON)</button><button class="btn" id="bkImport">복원 (JSON)</button>
+        <input type="file" id="bkFile" accept=".json,application/json" class="hide"></div></div>
     <div class="split">
       <div>
         <div class="card">
@@ -401,6 +472,15 @@ select.st.done{color:var(--done); border-color:var(--done-bd); background:var(--
             <label class="lbl" for="newTpl">새 템플릿</label>
             <div style="display:flex;gap:8px"><input id="newTpl" class="fld" placeholder="예: 반기검토 표준절차" style="flex:1">
               <button id="addTpl" class="btn primary">추가</button></div>
+          </div>
+        </div>
+        <div class="card mt12">
+          <div class="card-h"><h3>프로젝트 구분</h3><span style="margin-left:auto;font-size:11px;color:var(--muted)">회계감사 · 내부회계 · XBRL 등</span></div>
+          <div id="catList"></div>
+          <div class="card-b" style="border-top:1px solid var(--rule2)">
+            <label class="lbl" for="newCat">구분 추가</label>
+            <div style="display:flex;gap:8px"><input id="newCat" class="fld" placeholder="예: 회계감사" style="flex:1">
+              <button id="addCat" class="btn primary">추가</button></div>
           </div>
         </div>
         <div class="card mt12">
@@ -451,10 +531,11 @@ let auth = null, db = null, READY = false, INIT_ERR = "";
 /* ===== 상태 ===== */
 const S = {todo:"미착수", doing:"진행중", done:"완료"};
 const ABBR = {todo:"○", doing:"◐", done:"●"};
-let DB = {companies:[], projects:[], templates:[], members:[]};
+let DB = {companies:[], projects:[], templates:[], members:[], cats:[]};
 let uid = null, docRef = null, unsub = null;
 let view = "dash", sub = "sum", selProj = null, selTpl = null, hideDone = false;
-let filters = {co:"", tpl:"", owner:"", key:"", sort:"co", status:{todo:true, doing:true, done:true}, lateOnly:false};
+let dash = {co:"", cat:""};              // 현황판 공통 필터
+let filters = {co:"", cat:"", tpl:"", owner:"", key:"", sort:"co", status:{todo:true, doing:true, done:true}, lateOnly:false};
 let picked = new Set();          // 진행표 선택 (projId|stepId)
 
 const $ = s => document.querySelector(s);
@@ -494,7 +575,58 @@ const tplOf = id => DB.templates.find(t => t.id === id) || null;
 const tplName = id => (tplOf(id) || {name:"절차 미지정"}).name;
 const projOf = id => DB.projects.find(p => p.id === id) || null;
 const projTitle = p => coName(p.coId) + (p.period ? " · " + p.period : "");
-const visProjects = () => hideDone ? DB.projects.filter(p => cnt(p).pct < 100) : DB.projects;
+const visProjects = () => DB.projects.filter(p => (!hideDone || cnt(p).pct < 100)
+  && (!dash.co || p.coId === dash.co) && (!dash.cat || catLabel(p) === dash.cat));
+
+/* ===== 프로젝트 구분 ===== */
+const DEFAULT_CATS = ["회계감사", "내부회계", "내부회계 고도화", "XBRL 작성", "기타"];
+const guessCat = name => { const n = name || "";
+  if (/xbrl/i.test(n)) return "XBRL 작성"; if (/고도화/.test(n)) return "내부회계 고도화";
+  if (/내부회계/.test(n)) return "내부회계"; if (/감사|검토/.test(n)) return "회계감사"; return ""; };
+const catOf = p => p.cat || (tplOf(p.tplId) || {}).cat || "";
+const catLabel = p => catOf(p) || "미분류";
+const catList = () => { const s = new Set(DB.cats || []); DB.templates.forEach(t => { if (t.cat) s.add(t.cat); }); DB.projects.forEach(p => { if (p.cat) s.add(p.cat); }); return Array.from(s); };
+const projOwners = p => { const o = []; (p.steps || []).forEach(s => ownersOf(s).forEach(x => { if (!o.includes(x)) o.push(x); })); return o; };
+
+/* ===== 임시 일정(비고의 "예정: 9월말" 등) 해석 ===== */
+const parseTent = memo => {
+  const m = /(\d{1,2})\s*월\s*(초|중순|중|말|첫\s*주|둘째\s*주|셋째\s*주|넷째\s*주|마지막\s*주)?/.exec(memo || "");
+  if (!m) return null;
+  const mo = +m[1]; if (mo < 1 || mo > 12) return null;
+  const t = toD(todayStr()); let y = t.getFullYear();
+  if (mo < t.getMonth() + 1 - 2) y++;                       // 두 달 넘게 지난 달이면 내년으로 본다
+  const last = new Date(y, mo, 0).getDate();
+  let a = 1, b = last; const q = (m[2] || "").replace(/\s/g, "");
+  if (q === "초" || q === "첫주"){ a = 1; b = 10; }
+  else if (q === "중" || q === "중순"){ a = 11; b = 20; }
+  else if (q === "말" || q === "마지막주"){ a = 21; b = last; }
+  else if (q === "둘째주"){ a = 8; b = 14; } else if (q === "셋째주"){ a = 15; b = 21; } else if (q === "넷째주"){ a = 22; b = 28; }
+  const f = d => y + "-" + String(mo).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  return {start:f(a), end:f(b), tent:true};
+};
+// 확정 일정(시작·종료일) 우선, 없으면 비고에서 임시 일정 해석. 완료 단계는 확정 일정만.
+const schedOf = s => {
+  if (isDate(dueOf(s))) return {start:isDate(s.start) ? s.start : dueOf(s), end:dueOf(s), tent:false};
+  if (stOf(s) === "done") return null;
+  return parseTent(s.memo);
+};
+const schedText = sc => !sc ? "–" : (sc.start !== sc.end ? md(sc.start) + "~" + md(sc.end) : md(sc.end));
+
+/* 담당자 1글자 약칭 (성 겹치면 2글자) */
+function initialsMap(){
+  const cnt = {}; DB.members.forEach(m => { const k = [...m][0] || ""; cnt[k] = (cnt[k] || 0) + 1; });
+  const map = {}; DB.members.forEach(m => { const c = [...m]; map[m] = cnt[c[0]] > 1 ? c.slice(0, 2).join("") : c[0]; });
+  return map;
+}
+const initials = list => { const mp = initialsMap(); return list.map(o => mp[o] || [...o][0] || "").join("·"); };
+
+/* 회사별 색상 */
+const HUES = [210, 150, 28, 280, 0, 180, 60, 320, 100, 240, 20, 170];
+function coColor(i){
+  const h = HUES[i % HUES.length], dark = document.documentElement.dataset.theme === "dark";
+  return dark ? {bg:`hsl(${h} 35% 24%)`, bd:`hsl(${h} 35% 42%)`, fg:`hsl(${h} 70% 82%)`}
+              : {bg:`hsl(${h} 60% 92%)`, bd:`hsl(${h} 45% 72%)`, fg:`hsl(${h} 60% 26%)`};
+}
 
 let toastT;
 function toast(m){ const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 1900); }
@@ -558,12 +690,15 @@ READY && auth.onAuthStateChanged(u => {
 
 /* ===== 동기화 ===== */
 let localKey = "";
-const snapKey = d => JSON.stringify([d.companies, d.projects, d.templates, d.members]);
+const snapKey = d => JSON.stringify([d.companies, d.projects, d.templates, d.members, d.cats]);
 
 function migrate(){
   let ch = false;
   if (!Array.isArray(DB.projects)){ DB.projects = []; ch = true; }
   if (!Array.isArray(DB.members)){ DB.members = []; ch = true; }
+  if (!Array.isArray(DB.cats) || !DB.cats.length){ DB.cats = DEFAULT_CATS.slice(); ch = true; }
+  DB.templates.forEach(t => { if (t.cat === undefined){ t.cat = guessCat(t.name); ch = true; } });
+  DB.projects.forEach(p => { if (p.cat === undefined){ p.cat = ""; ch = true; } });
 
   // v2(회사에 단계 직접 보유) → v3(프로젝트 계층)
   DB.companies.forEach(c => {
@@ -595,7 +730,7 @@ function migrate(){
 function listen(){
   unsub = docRef.onSnapshot(snap => {
     const d = snap.data() || {};
-    const inc = {companies:d.companies || [], projects:d.projects || [], templates:d.templates || [], members:d.members || []};
+    const inc = {companies:d.companies || [], projects:d.projects || [], templates:d.templates || [], members:d.members || [], cats:d.cats || []};
     const key = snapKey(inc);
     // 저장 대기 중이거나 쓰기 응답이 아직 오지 않았으면, 서버 데이터로 덮어쓰지 않는다
     if (snap.metadata.hasPendingWrites || saveT || inflight > 0) return;
@@ -616,7 +751,7 @@ function save(now){
     saveT = null;
     localKey = snapKey(DB);
     inflight++;
-    docRef.set({companies:DB.companies, projects:DB.projects, templates:DB.templates, members:DB.members,
+    docRef.set({companies:DB.companies, projects:DB.projects, templates:DB.templates, members:DB.members, cats:DB.cats || [],
       updatedAt:firebase.firestore.FieldValue.serverTimestamp()}, {merge:true})
       .catch(e => toast("저장 실패: " + e.code))
       .finally(() => { inflight = Math.max(0, inflight - 1); });
@@ -668,11 +803,20 @@ function render(){
 /* ===== 현황판 ===== */
 function renderDash(){
   $$("#subSeg button").forEach(x => x.classList.toggle("on", x.dataset.s === sub));
+  $("#dCo").innerHTML = `<option value="">전체 회사</option>` + DB.companies.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("#dCo").value = coOf(dash.co) ? dash.co : (dash.co = "");
+  const cats = catList(); if (DB.projects.some(p => !catOf(p))) cats.push("미분류");
+  $("#dCat").innerHTML = `<option value="">전체 구분</option>` + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  $("#dCat").value = cats.includes(dash.cat) ? dash.cat : (dash.cat = "");
   if (sub === "sum") dashSummary();
   else if (sub === "matrix") dashMatrix();
   else if (sub === "gantt") dashGantt();
+  else if (sub === "report") dashReport();
+  else if (sub === "cal") dashCal();
   else dashBoard();
 }
+$("#dCo").onchange = e => { dash.co = e.target.value; renderDash(); };
+$("#dCat").onchange = e => { dash.cat = e.target.value; renderDash(); };
 
 function dashSummary(){
   const ps = visProjects();
@@ -713,7 +857,7 @@ function dashSummary(){
     return `<button class="co-card" data-goproj="${p.id}">
       <div class="top"><span class="nm">${esc(coName(p.coId))}</span>
         ${k.late ? `<span class="tag late">지연 ${k.late}</span>` : ""}<span class="pct">${k.pct}%</span></div>
-      <div class="meta">${esc(p.period || "기수 미지정")} · ${esc(tplName(p.tplId))}</div>
+      <div class="meta">${esc(catLabel(p))} · ${esc(p.period || "기수 미지정")} · ${esc(tplName(p.tplId))}</div>
       <div class="strip">${strip}</div>
       <div class="counts"><span>완료 <b>${k.done}</b></span><span>진행중 <b>${k.doing}</b></span><span>미착수 <b>${k.todo}</b></span><span>총 <b>${k.all}</b></span></div>
       <div class="runs">${runHtml}</div></button>`;
@@ -854,6 +998,241 @@ function dashBoard(){
   $$("[data-goproj]").forEach(b => b.onclick = () => { selProj = b.dataset.goproj; goTab("proj"); });
 }
 
+/* ===== 보고서 ===== */
+let repMode = "cat";   // cat = 구분별 / co = 회사별
+function dashReport(){
+  const ps = visProjects().slice().sort((a, b) => coName(a.coId).localeCompare(coName(b.coId)) || (a.period || "").localeCompare(b.period || ""));
+  const today = todayStr();
+  const keyOf = p => repMode === "co" ? coName(p.coId) : catLabel(p);
+  const groups = new Map();
+  ps.forEach(p => { const k = keyOf(p); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); });
+  const tot = {all:0, done:0, doing:0, late:0};
+  const agg = list => { const t = {all:0, done:0, doing:0, late:0}; list.forEach(p => { const c = cnt(p); t.all += c.all; t.done += c.done; t.doing += c.doing; t.late += c.late; }); return t; };
+  ps.forEach(p => { const c = cnt(p); tot.all += c.all; tot.done += c.done; tot.doing += c.doing; tot.late += c.late; });
+  const pct = t => t.all ? Math.round(t.done / t.all * 100) : 0;
+
+  const sumRows = [...groups.entries()].map(([k, list]) => { const t = agg(list);
+    return `<tr><td style="font-weight:600">${esc(k)}</td><td class="rn">${list.length}</td><td class="rn">${t.all}</td><td class="rn">${t.done}</td>
+      <td class="rn">${t.doing}</td><td class="rn" style="${t.late ? "color:var(--danger);font-weight:700" : ""}">${t.late}</td>
+      <td class="rn" style="font-weight:700;color:var(--brand)">${pct(t)}%</td></tr>`; }).join("")
+    + `<tr style="border-top:2px solid var(--rule)"><td style="font-weight:800">합계</td><td class="rn" style="font-weight:700">${ps.length}</td><td class="rn" style="font-weight:700">${tot.all}</td>
+      <td class="rn" style="font-weight:700">${tot.done}</td><td class="rn" style="font-weight:700">${tot.doing}</td>
+      <td class="rn" style="font-weight:700;${tot.late ? "color:var(--danger)" : ""}">${tot.late}</td><td class="rn" style="font-weight:800;color:var(--brand)">${pct(tot)}%</td></tr>`;
+
+  const projBlock = p => {
+    const k = cnt(p), steps = p.steps || [];
+    const doneNames = steps.filter(s => stOf(s) === "done").map(s => s.name);
+    const runs = running(p), todo = steps.filter(s => stOf(s) !== "done");
+    const strip = steps.map(s => `<i class="${isLate(s) ? "late" : stOf(s)}" title="${esc(s.name)} · ${S[stOf(s)]}"></i>`).join("") || "<i></i>";
+    const rows = todo.map(s => { const sc = schedOf(s);
+      return `<tr><td class="rn" style="color:var(--muted)">${String(steps.indexOf(s) + 1).padStart(2, "0")}</td>
+        <td style="font-weight:${stOf(s) === "doing" ? 700 : 500}">${esc(s.name)}</td>
+        <td style="white-space:nowrap"><span class="badge ${stOf(s)}">${S[stOf(s)]}</span>${isLate(s) ? ` <span class="tag late">${ddText(s).t}</span>` : ""}</td>
+        <td class="mono ${sc && sc.tent ? "tent" : ""}" style="white-space:nowrap">${schedText(sc)}</td>
+        <td>${esc(ownersOf(s).join(", ")) || `<span class="sub2">미배정</span>`}</td>
+        <td class="sub2">${esc(s.memo || "")}</td></tr>`; }).join("");
+    return `<div class="rep-proj">
+      <div class="top"><span class="nm">${esc(coName(p.coId))}</span><span class="sub2">${esc(p.period || "")}</span>
+        <span class="tag tpl">${esc(tplName(p.tplId))}</span>${repMode === "co" ? `<span class="tag tpl">${esc(catLabel(p))}</span>` : ""}
+        ${k.late ? `<span class="tag late">지연 ${k.late}</span>` : ""}<span class="pct">${k.pct}%</span></div>
+      <div class="strip">${strip}</div>
+      <div class="now"><span>완료 <b>${k.done}/${k.all}</b>${doneNames.length ? ` <span class="sub2">(~${esc(doneNames[doneNames.length - 1])})</span>` : ""}</span>
+        <span>진행중 <b>${runs.length ? esc(runs.map(s => s.name).join(", ")) : "없음"}</b></span>
+        <span>투입인원 <b>${esc(projOwners(p).join(", ")) || "미배정"}</b></span></div>
+      ${todo.length ? `<table><thead><tr><th style="width:36px">순번</th><th>향후 단계</th><th style="width:110px">상태</th><th style="width:118px">일정</th><th style="width:190px">담당</th><th>비고</th></tr></thead><tbody>${rows}</tbody></table>`
+                    : `<div class="sub2">모든 단계 완료</div>`}
+    </div>`;
+  };
+  const grpHtml = [...groups.entries()].map(([k, list]) => { const t = agg(list);
+    return `<div class="rep-grp"><h4>${esc(k)}<span class="c">${list.length}개 프로젝트 · 진행률 ${pct(t)}%${t.late ? ` · <span style="color:var(--danger)">지연 ${t.late}</span>` : ""}</span></h4>
+      ${list.map(projBlock).join("")}</div>`; }).join("");
+
+  // 향후 일정 (일정순)
+  const up = [];
+  ps.forEach(p => (p.steps || []).forEach(s => { if (stOf(s) === "done") return; const sc = schedOf(s); if (sc) up.push({p, s, sc}); }));
+  up.sort((a, b) => a.sc.start.localeCompare(b.sc.start) || a.sc.end.localeCompare(b.sc.end));
+  const upRows = up.map(({p, s, sc}) => `<tr>
+      <td class="mono ${sc.tent ? "tent" : ""}" style="white-space:nowrap">${sc.start === sc.end ? sc.start : sc.start + " ~ " + sc.end}</td>
+      <td style="font-weight:600;white-space:nowrap">${esc(coName(p.coId))}</td><td class="sub2" style="white-space:nowrap">${esc(catLabel(p))}${p.period ? " · " + esc(p.period) : ""}</td>
+      <td>${esc(s.name)}</td><td><span class="badge ${stOf(s)}">${S[stOf(s)]}</span>${isLate(s) ? ` <span class="tag late">지연</span>` : ""}</td>
+      <td>${esc(ownersOf(s).join(", ")) || `<span class="sub2">미배정</span>`}</td></tr>`).join("");
+
+  const filt = [dash.co ? coName(dash.co) : "전체 회사", dash.cat || "전체 구분", hideDone ? "완료 프로젝트 제외" : ""].filter(Boolean).join(" · ");
+  $("#dashBody").innerHTML = `
+    <div class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <div class="seg" id="repSeg"><button class="${repMode === "cat" ? "on" : ""}" data-m="cat">구분별</button><button class="${repMode === "co" ? "on" : ""}" data-m="co">회사별</button></div>
+      <span class="sub" style="font-size:12px;color:var(--muted)">회사·구분 필터는 상단에서 지정 · <i>기울임</i> = 비고의 "예정: ○월"을 해석한 임시 일정</span>
+      <div style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="repXlsx">보고서 엑셀</button><button class="btn primary" id="repPrint">인쇄 · PDF 저장</button></div>
+    </div>
+    <div class="rep">
+      <div class="rep-h"><h3>프로젝트 진행현황 보고</h3>
+        <div class="meta">기준일 ${today}<br>${esc(filt)} · 프로젝트 ${ps.length}건</div></div>
+      <div class="rep-sec">1. 요약</div>
+      <table><thead><tr><th>${repMode === "co" ? "회사" : "구분"}</th><th class="rn">프로젝트</th><th class="rn">전체단계</th><th class="rn">완료</th><th class="rn">진행중</th><th class="rn">지연</th><th class="rn">진행률</th></tr></thead>
+        <tbody>${sumRows}</tbody></table>
+      <div class="rep-sec">2. 프로젝트별 진행현황 및 향후 계획</div>
+      ${grpHtml || `<div class="empty">표시할 프로젝트가 없습니다.</div>`}
+      <div class="rep-sec">3. 향후 일정 (일정순)</div>
+      ${up.length ? `<table><thead><tr><th>일정</th><th>회사</th><th>구분 · 기수</th><th>단계</th><th>상태</th><th>담당</th></tr></thead><tbody>${upRows}</tbody></table>`
+                  : `<div class="sub2">일정이 지정된 향후 단계가 없습니다.</div>`}
+    </div>`;
+  $$("#repSeg button").forEach(b => b.onclick = () => { repMode = b.dataset.m; dashReport(); });
+  $("#repPrint").onclick = () => window.print();
+  $("#repXlsx").onclick = () => exportReport(ps, groups, up);
+}
+
+function exportReport(ps, groups, up){
+  if (typeof XLSX === "undefined"){ toast("엑셀 라이브러리를 불러오지 못했습니다"); return; }
+  if (!ps.length){ toast("추출할 데이터가 없습니다"); return; }
+  const wb = XLSX.utils.book_new(), sheets = [];
+  const hdr = repMode === "co" ? "회사" : "구분";
+  /* 1) 요약 */
+  const a1 = [[hdr, "프로젝트", "전체단계", "완료", "진행중", "지연", "진행률"]];
+  [...groups.entries()].forEach(([k, list]) => { const t = {all:0, done:0, doing:0, late:0};
+    list.forEach(p => { const c = cnt(p); t.all += c.all; t.done += c.done; t.doing += c.doing; t.late += c.late; });
+    a1.push([k, list.length, t.all, t.done, t.doing, t.late, t.all ? t.done / t.all : 0]); });
+  const ws1 = mkSheet(a1, (R, C) => C === 0 ? ST.co : C === 6 ? ST.pct : (C === 5 && a1[R][5] > 0) ? ST.late : ST.center,
+    [{wch:18},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8},{wch:9}]);
+  XLSX.utils.book_append_sheet(wb, ws1, "요약"); sheets.push(1);
+  /* 2) 프로젝트 현황 */
+  const a2 = [["구분","회사","기수","절차","진행률","완료/전체","현재 진행중","다음 단계","다음 일정","일정 성격","투입인원","지연","비고(진행중·다음)"]];
+  const meta2 = [];
+  ps.forEach(p => { const k = cnt(p), steps = p.steps || [], runs = running(p);
+    const next = steps.find(s => stOf(s) === "todo"), sc = next ? schedOf(next) : null;
+    const memo = steps.filter(s => stOf(s) !== "done").slice(0, 3).map(s => s.memo).filter(Boolean).join(" / ");
+    a2.push([catLabel(p), coName(p.coId), p.period || "", tplName(p.tplId), k.all ? k.done / k.all : 0, `${k.done}/${k.all}`,
+      runs.map(s => s.name).join(", "), next ? next.name : (runs.length ? "" : "완료"), sc ? (sc.start === sc.end ? sc.start : sc.start + " ~ " + sc.end) : "",
+      sc ? (sc.tent ? "예정(임시)" : "확정") : "", projOwners(p).join(", "), k.late, memo]);
+    meta2.push({late:k.late}); });
+  const ws2 = mkSheet(a2, (R, C) => C === 1 ? ST.co : C === 4 ? ST.pct : (C === 5 || C === 8 || C === 9) ? ST.center : C === 11 ? (meta2[R - 1].late ? ST.late : ST.center) : ST.base,
+    [{wch:14},{wch:14},{wch:18},{wch:18},{wch:8},{wch:9},{wch:28},{wch:24},{wch:22},{wch:10},{wch:30},{wch:6},{wch:36}]);
+  XLSX.utils.book_append_sheet(wb, ws2, "프로젝트현황"); sheets.push(2);
+  /* 3) 단계별 상세 (모든 단계) */
+  const a3 = [["구분","회사","기수","순번","절차단계","상태","일정 시작","일정 종료","일정 성격","D-day","담당","비고"]];
+  const meta3 = [];
+  ps.forEach(p => (p.steps || []).forEach((s, i) => { const sc = schedOf(s);
+    a3.push([catLabel(p), coName(p.coId), p.period || "", i + 1, s.name, S[stOf(s)], sc ? sc.start : "", sc ? sc.end : "",
+      sc ? (sc.tent ? "예정(임시)" : "확정") : "", ddText(s).t, ownersOf(s).join(", "), s.memo || ""]); meta3.push(s); }));
+  const ws3 = mkSheet(a3, (R, C) => C === 1 ? ST.co : C === 5 ? cellStyle(meta3[R - 1]) : (C === 3 || C === 6 || C === 7 || C === 8) ? ST.center : C === 9 ? (isLate(meta3[R - 1]) ? ST.late : ST.center) : ST.base,
+    [{wch:14},{wch:14},{wch:18},{wch:6},{wch:30},{wch:9},{wch:12},{wch:12},{wch:10},{wch:8},{wch:30},{wch:32}]);
+  XLSX.utils.book_append_sheet(wb, ws3, "단계별상세"); sheets.push(2);
+  /* 4) 향후 일정 */
+  const a4 = [["일정 시작","일정 종료","일정 성격","회사","구분","기수","단계","상태","담당","비고"]];
+  const meta4 = [];
+  up.forEach(({p, s, sc}) => { a4.push([sc.start, sc.end, sc.tent ? "예정(임시)" : "확정", coName(p.coId), catLabel(p), p.period || "", s.name, S[stOf(s)], ownersOf(s).join(", "), s.memo || ""]); meta4.push(s); });
+  const ws4 = mkSheet(a4, (R, C) => C === 3 ? ST.co : C === 7 ? cellStyle(meta4[R - 1]) : (C <= 2) ? ST.center : ST.base,
+    [{wch:12},{wch:12},{wch:10},{wch:14},{wch:14},{wch:18},{wch:30},{wch:9},{wch:30},{wch:32}]);
+  XLSX.utils.book_append_sheet(wb, ws4, "향후일정"); sheets.push(3);
+  /* 5) 월별 인원 배정 */
+  const months = [];
+  up.forEach(({sc}) => { for (let d = new Date(toD(sc.start).getFullYear(), toD(sc.start).getMonth(), 1); d <= toD(sc.end); d.setMonth(d.getMonth() + 1)){
+    const k = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); if (!months.includes(k)) months.push(k); } });
+  months.sort();
+  if (months.length){
+    const a5 = [["담당자"].concat(months.map(m => m.slice(2).replace("-", "년 ") + "월"))];
+    const names = DB.members.slice(); up.forEach(({s}) => ownersOf(s).forEach(o => { if (!names.includes(o)) names.push(o); })); names.push("미배정");
+    names.forEach(n => { const row = [n]; months.forEach(m => {
+      const items = up.filter(({s, sc}) => (ownersOf(s).includes(n) || (n === "미배정" && !ownersOf(s).length)) && sc.start.slice(0, 7) <= m && sc.end.slice(0, 7) >= m)
+        .map(({p, s, sc}) => coName(p.coId) + " " + s.name + (sc.tent ? "(예정)" : ""));
+      row.push(items.join("\n")); }); if (row.slice(1).some(Boolean)) a5.push(row); });
+    const ws5 = mkSheet(a5, (R, C) => C === 0 ? ST.co : {font:{sz:10}, alignment:{vertical:"top", wrapText:true}, border:BD},
+      [{wch:12}].concat(months.map(() => ({wch:34}))));
+    XLSX.utils.book_append_sheet(wb, ws5, "월별인원배정"); sheets.push(1);
+  }
+  writeWb(wb, "진행현황보고_" + todayStr().replace(/-/g, "") + ".xlsx", sheets);
+}
+
+/* ===== 캘린더 ===== */
+let calYm = null, calOwners = new Set(), calTent = true;
+function calEvents(){
+  const evs = [];
+  visProjects().forEach(p => (p.steps || []).forEach(s => {
+    const sc = schedOf(s); if (!sc || (sc.tent && !calTent)) return;
+    const os = ownersOf(s);
+    if (calOwners.size && !(os.some(o => calOwners.has(o)) || (calOwners.has("__none") && !os.length))) return;
+    evs.push({p, s, start:sc.start, end:sc.end, tent:sc.tent, late:isLate(s), st:stOf(s)});
+  }));
+  return evs;
+}
+function dashCal(){
+  if (!calYm){ const t = new Date(); calYm = {y:t.getFullYear(), m:t.getMonth()}; }
+  const {y, m} = calYm, today = todayStr();
+  const last = new Date(y, m + 1, 0), gridStart = new Date(y, m, 1 - new Date(y, m, 1).getDay());
+  const weeks = [];
+  for (let d = new Date(gridStart); d <= last; d.setDate(d.getDate() + 7))
+    weeks.push(Array.from({length:7}, (_, i) => { const x = new Date(d); x.setDate(d.getDate() + i); return x; }));
+  const evs = calEvents();
+  const coIdx = {}; DB.companies.forEach((c, i) => coIdx[c.id] = i);
+  const monthEvs = evs.filter(e => e.start <= fromD(last) && e.end >= fromD(new Date(y, m, 1)));
+
+  const weekHtml = weeks.map(days => {
+    const ws = fromD(days[0]), we = fromD(days[6]);
+    const segs = evs.filter(e => e.start <= we && e.end >= ws).map(e => ({e,
+      a:e.start < ws ? 0 : diffDays(e.start, ws), b:e.end > we ? 6 : diffDays(e.end, ws)}))
+      .sort((p, q) => p.a - q.a || (q.b - q.a) - (p.b - p.a) || coName(p.e.p.coId).localeCompare(coName(q.e.p.coId)));
+    const lanes = [];
+    segs.forEach(sg => { let li = lanes.findIndex(v => v < sg.a); if (li === -1){ lanes.push(sg.b); li = lanes.length - 1; } else lanes[li] = sg.b; sg.lane = li; });
+    const h = Math.max(88, 26 + lanes.length * 23 + 6);
+    const cells = days.map(d => { const ds = fromD(d);
+      const cls = ["cal-d", d.getMonth() !== m ? "out" : "", (d.getDay() === 0 || d.getDay() === 6) ? "we" : "", ds === today ? "today" : ""].join(" ");
+      return `<div class="${cls}" style="min-height:${h}px"><span class="n">${d.getDate()}</span></div>`; }).join("");
+    const bars = segs.map(sg => { const e = sg.e, col = coColor(coIdx[e.p.coId] || 0);
+      const cls = ["cal-ev", e.tent ? "tent" : "", e.st === "done" ? "done" : "", e.late ? "late" : ""].join(" ");
+      const own = ownersOf(e.s);
+      const tip = `${coName(e.p.coId)}${e.p.period ? " · " + e.p.period : ""} · ${e.s.name} · ${e.start}~${e.end}${e.tent ? " (예정·임시)" : ""} · ${S[e.st]} · ${own.join(", ") || "미배정"}`;
+      return `<div class="${cls}" data-goproj="${e.p.id}" title="${esc(tip)}" style="left:calc(${sg.a / 7 * 100}% + 3px);width:calc(${(sg.b - sg.a + 1) / 7 * 100}% - 6px);top:${26 + sg.lane * 23}px;background:${col.bg};border-color:${col.bd};color:${col.fg}">
+        <span class="t">${esc(coName(e.p.coId))} <span style="font-weight:500">${esc(e.s.name)}</span></span><span class="o">${esc(initials(own)) || "–"}</span></div>`; }).join("");
+    return `<div class="cal-wk">${cells}${bars}</div>`;
+  }).join("");
+
+  const chips = [`<button class="chip ${calOwners.size ? "" : "on"}" data-own="">전체</button>`]
+    .concat(DB.members.map(o => `<button class="chip ${calOwners.has(o) ? "on" : ""}" data-own="${esc(o)}">${esc(o)}</button>`))
+    .concat([`<button class="chip ${calOwners.has("__none") ? "on" : ""}" data-own="__none">미배정</button>`]).join("");
+  const usedCo = []; monthEvs.forEach(e => { if (!usedCo.includes(e.p.coId)) usedCo.push(e.p.coId); });
+  const legend = usedCo.map(id => { const c = coColor(coIdx[id] || 0); return `<span><i style="background:${c.bg};border-color:${c.bd}"></i>${esc(coName(id))}</span>`; }).join("")
+    + `<span style="margin-left:auto"><i style="border:1px dashed var(--muted)"></i>점선 = 비고의 "예정: ○월" 임시 일정 · 약칭 = 담당자</span>`;
+  const listRows = monthEvs.slice().sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end)).map(e => `<tr>
+      <td class="mono ${e.tent ? "tent" : ""}" style="white-space:nowrap">${e.start === e.end ? md(e.start) : md(e.start) + "~" + md(e.end)}</td>
+      <td style="font-weight:600;white-space:nowrap">${esc(coName(e.p.coId))}</td><td class="sub2">${esc(catLabel(e.p))}${e.p.period ? " · " + esc(e.p.period) : ""}</td>
+      <td>${esc(e.s.name)}</td><td><span class="badge ${e.st}">${S[e.st]}</span>${e.late ? ` <span class="tag late">지연</span>` : ""}</td>
+      <td>${esc(ownersOf(e.s).join(", ")) || `<span class="sub2">미배정</span>`}</td><td class="sub2">${esc(e.s.memo || "")}</td></tr>`).join("");
+
+  $("#dashBody").innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-h cal-tools no-print">
+        <button class="btn sm" id="calPrev">◀</button><span class="cal-ym">${y}년 ${m + 1}월</span><button class="btn sm" id="calNext">▶</button>
+        <button class="btn sm" id="calToday">오늘</button>
+        <div class="chips" id="calOwn" style="flex-wrap:wrap;margin-left:8px">${chips}</div>
+        <label style="margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px"><input type="checkbox" id="calTent" ${calTent ? "checked" : ""}> 임시일정 표시</label>
+        <button class="btn sm" id="calPrint">인쇄</button>
+      </div>
+      <div class="card-b" style="padding:14px 16px">
+        <div class="rep-h" style="display:none"></div>
+        <div style="font-size:15px;font-weight:800;margin-bottom:10px">${y}년 ${m + 1}월 일정 <span class="sub2" style="font-weight:500">· ${dash.co ? esc(coName(dash.co)) : "전체 회사"} · ${esc(dash.cat || "전체 구분")}${calOwners.size ? " · 담당 " + esc([...calOwners].map(o => o === "__none" ? "미배정" : o).join(", ")) : ""}</span></div>
+        <div class="cal">
+          <div class="cal-dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+          ${weekHtml}
+        </div>
+        <div class="cal-leg">${legend}</div>
+      </div>
+    </div>
+    <div class="card"><div class="card-h"><h3>이달 일정 목록</h3><span style="margin-left:auto;font-size:11.5px;color:var(--muted)">${monthEvs.length}건</span></div>
+      ${monthEvs.length ? `<div class="tbl-wrap"><table><thead><tr><th>일정</th><th>회사</th><th>구분 · 기수</th><th>단계</th><th>상태</th><th>담당</th><th>비고</th></tr></thead><tbody>${listRows}</tbody></table></div>`
+                        : `<div class="empty">이 달에 표시할 일정이 없습니다.</div>`}
+    </div>`;
+  $("#calPrev").onclick = () => { calYm = {y:m === 0 ? y - 1 : y, m:m === 0 ? 11 : m - 1}; dashCal(); };
+  $("#calNext").onclick = () => { calYm = {y:m === 11 ? y + 1 : y, m:m === 11 ? 0 : m + 1}; dashCal(); };
+  $("#calToday").onclick = () => { calYm = null; dashCal(); };
+  $("#calTent").onchange = e => { calTent = e.target.checked; dashCal(); };
+  $("#calPrint").onclick = () => window.print();
+  $$("#calOwn .chip").forEach(b => b.onclick = () => {
+    const o = b.dataset.own;
+    if (!o) calOwners.clear(); else calOwners.has(o) ? calOwners.delete(o) : calOwners.add(o);
+    dashCal();
+  });
+  $$("[data-goproj]").forEach(b => b.onclick = () => { selProj = b.dataset.goproj; goTab("proj"); });
+}
+
 /* ===== 담당자 선택 팝오버 (다중 선택) ===== */
 let popTarget = null, ownClip = null;
 function ownLabel(list){ return list.length ? list.join(", ") : "담당자 –"; }
@@ -955,6 +1334,7 @@ function flatRows(useFilter){
     if (useFilter){
       if (filters.co && p.coId !== filters.co) return;
       if (filters.tpl && (filters.tpl === "__none" ? (p.tplId || "") !== "" : (p.tplId || "") !== filters.tpl)) return;
+      if (filters.cat && catLabel(p) !== filters.cat) return;
       if (!filters.status[r.status]) return;
       if (filters.lateOnly && !r.late) return;
       if (filters.owner === "__none" ? os.length : (filters.owner && !os.includes(filters.owner))) return;
@@ -970,6 +1350,9 @@ function flatRows(useFilter){
 function renderTable(){
   $("#fCo").innerHTML = `<option value="">전체 회사</option>` + DB.companies.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
   $("#fCo").value = filters.co;
+  { const cats = catList(); if (DB.projects.some(p => !catOf(p))) cats.push("미분류");
+    $("#fCat").innerHTML = `<option value="">전체 구분</option>` + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    $("#fCat").value = cats.includes(filters.cat) ? filters.cat : (filters.cat = ""); }
   $("#fTpl").innerHTML = `<option value="">전체 절차</option><option value="__none">절차 미지정</option>` +
     DB.templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
   $("#fTpl").value = filters.tpl;
@@ -1094,6 +1477,7 @@ function renderBulk(){
 
 $("#fCo").onchange = e => { filters.co = e.target.value; renderTable(); };
 $("#fTpl").onchange = e => { filters.tpl = e.target.value; renderTable(); };
+$("#fCat").onchange = e => { filters.cat = e.target.value; renderTable(); };
 $("#fOwner").onchange = e => { filters.owner = e.target.value; renderTable(); };
 $("#fSort").onchange = e => { filters.sort = e.target.value; renderTable(); };
 $("#fKey").oninput = e => { filters.key = e.target.value.trim(); renderTable(); };
@@ -1144,6 +1528,7 @@ function renderProj(){
       <div class="card-h">
         <h3>${esc(coName(p.coId))}</h3>
         <span class="tag tpl">${esc(tplName(p.tplId))}</span>
+        <span class="tag tpl" title="구분">${esc(catLabel(p))}${p.cat ? "" : " <span style='opacity:.6'>(템플릿 기본)</span>"}</span>
         <span class="sub2">${esc(p.period || "기수 미지정")}</span>
         ${k.late ? `<span class="tag late">지연 ${k.late}</span>` : ""}
         <span class="mono" style="font-weight:700;color:var(--brand)">${k.pct}%</span>
@@ -1151,6 +1536,10 @@ function renderProj(){
           <select id="pTpl" class="fld" style="width:auto;font-size:12px;padding:5px 9px">
             <option value="">절차 미지정</option>
             ${DB.templates.map(t => `<option value="${t.id}" ${p.tplId === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}
+          </select>
+          <select id="pCat" class="fld" style="width:auto;font-size:12px;padding:5px 9px" title="구분">
+            <option value="">구분: 템플릿 기본${(tplOf(p.tplId) || {}).cat ? " (" + esc(tplOf(p.tplId).cat) + ")" : ""}</option>
+            ${catList().map(c => `<option value="${esc(c)}" ${p.cat === c ? "selected" : ""}>${esc(c)}</option>`).join("")}
           </select>
           <button class="btn sm" id="pPeriod">기수 변경</button>
           <button class="btn sm" id="pLoad">단계 불러오기</button>
@@ -1225,6 +1614,7 @@ function wireProj(p){
   $("#addStep").onclick = add;
   $("#newStep").onkeydown = e => { if (e.key === "Enter") add(); };
   $("#pTpl").onchange = e => { p.tplId = e.target.value; save(true); renderProj(); };
+  $("#pCat").onchange = e => { p.cat = e.target.value; save(true); renderProj(); };
   $("#pPeriod").onclick = () => { const v = prompt("기수 (예: 26Q2 반기, 26기말)", p.period || ""); if (v === null) return;
     p.period = v.trim(); save(true); renderProj(); };
   $("#pDel").onclick = () => {
@@ -1248,7 +1638,7 @@ function wireProj(p){
     const shift = prompt("일정을 며칠 이동할까요? (예: 182 = 반년 뒤 / 비우면 일정 없이 복제)", "182");
     if (shift === null) return;
     const n = parseInt(shift, 10);
-    const np = {id:uid8(), coId:p.coId, tplId:p.tplId, period:period.trim(),
+    const np = {id:uid8(), coId:p.coId, tplId:p.tplId, cat:p.cat || "", period:period.trim(),
       steps:steps.map(s => ({id:uid8(), name:s.name, owners:ownersOf(s).slice(), memo:"", status:"todo",
         start:(isDate(s.start) && !isNaN(n)) ? addDays(s.start, n) : "",
         end:(isDate(s.end) && !isNaN(n)) ? addDays(s.end, n) : ""}))};
@@ -1273,7 +1663,7 @@ $("#addProj").onclick = () => {
   const coId = $("#npCo").value; if (!coId){ toast("회사를 먼저 등록하세요"); return; }
   const t = tplOf($("#npTpl").value);
   const base = $("#npBase").value || todayStr();
-  const p = {id:uid8(), coId, tplId:t ? t.id : "", period:$("#npPeriod").value.trim(), steps:t ? buildSteps(t, base) : []};
+  const p = {id:uid8(), coId, tplId:t ? t.id : "", cat:"", period:$("#npPeriod").value.trim(), steps:t ? buildSteps(t, base) : []};
   DB.projects.push(p); selProj = p.id; $("#npPeriod").value = "";
   save(true); renderProj(); toast("프로젝트가 생성되었습니다");
 };
@@ -1306,6 +1696,29 @@ function renderBase(){
     DB.members.splice(i, 1); save(true); renderBase();
   });
 
+  const catUse = c => DB.projects.filter(p => catLabel(p) === c).length;
+  $("#catList").innerHTML = (DB.cats || []).length
+    ? DB.cats.map((c, i) => `<div class="mem-item">${esc(c)}<span class="mini">${catUse(c)}건</span>
+        <button data-cren="${i}" title="이름변경">✎</button><button data-cdel="${i}" title="삭제">✕</button></div>`).join("")
+    : `<div class="empty" style="padding:22px 16px">구분이 없습니다.</div>`;
+  $$("[data-cren]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.cren, old = DB.cats[i], n = prompt("구분명", old);
+    if (!n || !n.trim() || n.trim() === old) return;
+    const nv = n.trim(); if (DB.cats.includes(nv)){ toast("이미 있는 구분입니다"); return; }
+    DB.cats[i] = nv;
+    DB.templates.forEach(t => { if (t.cat === old) t.cat = nv; });
+    DB.projects.forEach(p => { if (p.cat === old) p.cat = nv; });
+    save(true); renderBase();
+  });
+  $$("[data-cdel]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.cdel, c = DB.cats[i], n = catUse(c);
+    if (!confirm(n ? `「${c}」 구분을 지울까요?\n이 구분의 프로젝트 ${n}건은 '미분류'가 됩니다.` : `「${c}」 구분을 지울까요?`)) return;
+    DB.cats.splice(i, 1);
+    DB.templates.forEach(t => { if (t.cat === c) t.cat = ""; });
+    DB.projects.forEach(p => { if (p.cat === c) p.cat = ""; });
+    save(true); renderBase();
+  });
+
   $("#tplList").innerHTML = DB.templates.length
     ? DB.templates.map(t => `<button class="side-item ${t.id === selTpl ? "on" : ""}" style="padding-left:14px;border-bottom:1px solid var(--rule2)" data-tpl="${t.id}">
         ${esc(t.name)}<span class="mini">${(t.steps || []).length}단계</span></button>`).join("")
@@ -1317,6 +1730,10 @@ function renderBase(){
   $("#tplDetail").innerHTML = `
     <div class="card">
       <div class="card-h"><h3>${esc(t.name)}</h3>
+        <select id="tCat" class="fld" style="width:auto;font-size:12px;padding:4px 8px" title="구분 (이 템플릿으로 만든 프로젝트의 기본 구분)">
+          <option value="">구분 미지정</option>
+          ${catList().map(c => `<option value="${esc(c)}" ${t.cat === c ? "selected" : ""}>${esc(c)}</option>`).join("")}
+        </select>
         <span style="margin-left:auto;font-size:11.5px;color:var(--muted)">사용 중인 프로젝트 ${DB.projects.filter(p => p.tplId === t.id).length}건</span>
         <button class="btn sm" id="renameTpl">이름변경</button><button class="btn sm ghost" id="delTpl">삭제</button></div>
       <div class="card-b">
@@ -1359,6 +1776,7 @@ function renderBase(){
   $("#addTStep").onclick = addT;
   $("#newTStep").onkeydown = e => { if (e.key === "Enter") addT(); };
   $("#renameTpl").onclick = () => { const n = prompt("템플릿명", t.name); if (n && n.trim()){ t.name = n.trim(); save(true); renderBase(); } };
+  $("#tCat").onchange = e => { t.cat = e.target.value; save(true); renderBase(); };
   $("#delTpl").onclick = () => {
     const used = DB.projects.filter(p => p.tplId === t.id).length;
     if (!confirm(`「${t.name}」 템플릿을 삭제할까요?${used ? `\n사용 중인 프로젝트 ${used}건은 '절차 미지정'이 됩니다.` : ""}`)) return;
@@ -1373,6 +1791,12 @@ $("#addTpl").onclick = () => {
   save(true); renderBase();
 };
 $("#newTpl").onkeydown = e => { if (e.key === "Enter") $("#addTpl").click(); };
+$("#addCat").onclick = () => {
+  const n = $("#newCat").value.trim(); if (!n) return;
+  if ((DB.cats || []).includes(n)){ toast("이미 있는 구분입니다"); return; }
+  (DB.cats = DB.cats || []).push(n); $("#newCat").value = ""; save(true); renderBase();
+};
+$("#newCat").onkeydown = e => { if (e.key === "Enter") $("#addCat").click(); };
 $("#addMem").onclick = () => {
   const n = $("#newMem").value.trim(); if (!n) return;
   if (DB.members.includes(n)){ toast("이미 있는 이름입니다"); return; }
@@ -1424,39 +1848,39 @@ function exportXlsx(useFilter){
   }
 
   /* 1) 프로젝트 요약 */
-  const a1 = [["회사","기수","절차","전체단계","완료","진행중","미착수","지연","진행률","진행중 단계(동시)","기간","가장 이른 기한"]];
+  const a1 = [["구분","회사","기수","절차","전체단계","완료","진행중","미착수","지연","진행률","진행중 단계(동시)","기간","가장 이른 기한"]];
   src.forEach(p => {
     const k = cnt(p), runs = running(p);
     const ds = (p.steps || []).map(s => s.start).filter(isDate).sort();
     const de = (p.steps || []).map(s => dueOf(s)).filter(isDate).sort();
     const next = (p.steps || []).filter(s => stOf(s) !== "done" && isDate(dueOf(s))).map(s => dueOf(s)).sort()[0] || "";
-    a1.push([coName(p.coId), p.period || "", tplName(p.tplId), k.all, k.done, k.doing, k.todo, k.late,
+    a1.push([catLabel(p), coName(p.coId), p.period || "", tplName(p.tplId), k.all, k.done, k.doing, k.todo, k.late,
              k.all ? k.done / k.all : 0,
              runs.map(s => s.name + (ownersOf(s).length ? "(" + ownersOf(s).join("·") + ")" : "")).join(", "),
              (ds[0] || de[0] || "") + (de.length ? " ~ " + de[de.length - 1] : ""), next]);
   });
   const ws1 = mkSheet(a1, (R, C) => {
-    if (C === 0) return ST.co;
-    if (C === 8) return ST.pct;
-    if (C === 7) return a1[R][7] > 0 ? ST.late : ST.center;
-    if (C >= 3 && C <= 6) return ST.center;
+    if (C === 1) return ST.co;
+    if (C === 9) return ST.pct;
+    if (C === 8) return a1[R][8] > 0 ? ST.late : ST.center;
+    if (C >= 4 && C <= 7) return ST.center;
     return ST.base;
-  }, [{wch:16},{wch:14},{wch:20},{wch:9},{wch:7},{wch:8},{wch:8},{wch:7},{wch:9},{wch:40},{wch:24},{wch:13}]);
-  XLSX.utils.book_append_sheet(wb, ws1, "프로젝트요약"); sheets.push(1);
+  }, [{wch:14},{wch:16},{wch:14},{wch:20},{wch:9},{wch:7},{wch:8},{wch:8},{wch:7},{wch:9},{wch:40},{wch:24},{wch:13}]);
+  XLSX.utils.book_append_sheet(wb, ws1, "프로젝트요약"); sheets.push(2);
 
   /* 2) 진행현황 */
-  const a2 = [["회사","기수","절차","순번","절차단계","시작일","종료일","D-day","상태","담당자","경과(진행중)","비고"]];
-  rows.forEach(r => a2.push([r.co, r.period, tplName(r.tpl), r.no, r.s.name, r.s.start || "", r.s.end || "",
+  const a2 = [["구분","회사","기수","절차","순번","절차단계","시작일","종료일","D-day","상태","담당자","경과(진행중)","비고"]];
+  rows.forEach(r => a2.push([catLabel(r.p), r.co, r.period, tplName(r.tpl), r.no, r.s.name, r.s.start || "", r.s.end || "",
     ddText(r.s).t, S[r.status], r.owners.join(", "), r.stale !== null ? r.stale + "일" : "", r.s.memo || ""]));
   const ws2 = mkSheet(a2, (R, C) => {
     const r = rows[R - 1];
-    if (C === 0) return ST.co;
-    if (C === 8) return cellStyle(r.s);
-    if (C === 7) return r.late ? ST.late : ST.center;
-    if (C === 3 || C === 5 || C === 6 || C === 10) return ST.center;
+    if (C === 1) return ST.co;
+    if (C === 9) return cellStyle(r.s);
+    if (C === 8) return r.late ? ST.late : ST.center;
+    if (C === 4 || C === 6 || C === 7 || C === 11) return ST.center;
     return ST.base;
-  }, [{wch:15},{wch:13},{wch:18},{wch:6},{wch:30},{wch:12},{wch:12},{wch:8},{wch:9},{wch:16},{wch:12},{wch:32}]);
-  XLSX.utils.book_append_sheet(wb, ws2, "진행현황"); sheets.push(1);
+  }, [{wch:14},{wch:15},{wch:13},{wch:18},{wch:6},{wch:30},{wch:12},{wch:12},{wch:8},{wch:9},{wch:16},{wch:12},{wch:32}]);
+  XLSX.utils.book_append_sheet(wb, ws2, "진행현황"); sheets.push(2);
 
   /* 3) 절차별 매트릭스 */
   const used = ["프로젝트요약", "진행현황"];
@@ -1487,7 +1911,10 @@ function exportXlsx(useFilter){
     sheets.push(2);
   });
 
-  const fname = "진행현황_" + todayStr().replace(/-/g, "") + ".xlsx";
+  writeWb(wb, "진행현황_" + todayStr().replace(/-/g, "") + ".xlsx", sheets);
+}
+/* 통합문서 저장 (시트별 틀고정 열 수 지정) */
+function writeWb(wb, fname, sheets){
   const buf = XLSX.write(wb, {type:"array", bookType:"xlsx"});
   if (typeof JSZip === "undefined"){ dl(new Blob([buf]), fname); toast("엑셀 추출 완료 (틀고정 제외)"); return; }
   JSZip.loadAsync(buf).then(async zip => {
@@ -1505,6 +1932,42 @@ function exportXlsx(useFilter){
   }).then(blob => { dl(blob, fname); toast("엑셀 추출 완료"); })
     .catch(() => { dl(new Blob([buf]), fname); toast("엑셀 추출 완료 (틀고정 제외)"); });
 }
+/* ===== 백업 / 복원 ===== */
+$("#bkExport").onclick = () => {
+  const data = {app:"progress-tracker", version:3, exportedAt:new Date().toISOString(),
+    companies:DB.companies, projects:DB.projects, templates:DB.templates, members:DB.members, cats:DB.cats || []};
+  dl(new Blob([JSON.stringify(data, null, 1)], {type:"application/json"}), "진행현황_백업_" + todayStr().replace(/-/g, "") + ".json");
+  toast("백업 파일을 내려받았습니다");
+};
+$("#bkImport").onclick = () => { $("#bkFile").value = ""; $("#bkFile").click(); };
+$("#bkFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    let d; try { d = JSON.parse(rd.result); } catch(_){ toast("JSON 파일을 읽을 수 없습니다"); return; }
+    const ok = d && Array.isArray(d.companies) && Array.isArray(d.projects) && Array.isArray(d.templates);
+    if (!ok){ toast("진행현황 백업 파일이 아닙니다"); return; }
+    const cur = `현재: 회사 ${DB.companies.length} · 프로젝트 ${DB.projects.length} · 템플릿 ${DB.templates.length}`;
+    const inc = `파일: 회사 ${d.companies.length} · 프로젝트 ${d.projects.length} · 템플릿 ${d.templates.length}${d.exportedAt ? " (" + d.exportedAt.slice(0, 16).replace("T", " ") + " 백업)" : ""}`;
+    const mode = prompt(`${cur}\n${inc}\n\n1 = 전체 교체 (현재 데이터 삭제 후 파일로 대체)\n2 = 추가 병합 (파일에만 있는 회사·프로젝트·템플릿을 추가)\n취소 = 중단`, "1");
+    if (mode !== "1" && mode !== "2") return;
+    if (mode === "1"){
+      if (!confirm("현재 데이터를 모두 지우고 파일 내용으로 교체합니다. 계속할까요?")) return;
+      DB = {companies:d.companies, projects:d.projects, templates:d.templates, members:d.members || [], cats:d.cats || []};
+    } else {
+      const has = (arr, id) => arr.some(x => x.id === id);
+      d.companies.forEach(c => { if (!has(DB.companies, c.id)) DB.companies.push(c); });
+      d.templates.forEach(t => { if (!has(DB.templates, t.id)) DB.templates.push(t); });
+      d.projects.forEach(p => { if (!has(DB.projects, p.id)) DB.projects.push(p); });
+      (d.members || []).forEach(m => { if (!DB.members.includes(m)) DB.members.push(m); });
+      (d.cats || []).forEach(c => { if (!(DB.cats = DB.cats || []).includes(c)) DB.cats.push(c); });
+    }
+    migrate(); selProj = null; selTpl = null; picked = new Set();
+    save(true); render(); toast(mode === "1" ? "복원 완료 (전체 교체)" : "복원 완료 (추가 병합)");
+  };
+  rd.readAsText(f, "utf-8");
+};
+
 function dl(blob, name){
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = name;
