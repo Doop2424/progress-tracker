@@ -719,7 +719,7 @@ function migrate(){
   if (!Array.isArray(DB.members)){ DB.members = []; ch = true; }
   if (!Array.isArray(DB.cats) || !DB.cats.length){ DB.cats = DEFAULT_CATS.slice(); ch = true; }
   DB.templates.forEach(t => { if (t.cat === undefined){ t.cat = guessCat(t.name); ch = true; } });
-  DB.projects.forEach(p => { if (p.cat === undefined){ p.cat = ""; ch = true; } });
+  DB.projects.forEach(p => { if (p.cat === undefined){ p.cat = ""; ch = true; } if (!Array.isArray(p.assign)){ p.assign = []; ch = true; } if (p.showAssign === undefined){ p.showAssign = true; ch = true; } });
 
   // v2(회사에 단계 직접 보유) → v3(프로젝트 계층)
   DB.companies.forEach(c => {
@@ -1022,7 +1022,8 @@ function dashBoard(){
 /* ===== 보고서 ===== */
 let repMode = "cat";   // cat = 구분별 / co = 회사별
 // 보고서 구성 옵션
-const rep = {sec:{sum:true, proj:true, up:true, cal:true}, excl:new Set(), horizon:0, detail:"todo", pick:false};
+const rep = {sec:{sum:true, proj:true, up:true, cal:true}, excl:new Set(), horizon:0, detail:"todo", pick:false, assign:true};
+const asgRows = p => (rep.assign && p.showAssign !== false) ? (p.assign || []).filter(r => r.owner || r.work) : [];
 const SEC_NAMES = {sum:"요약", proj:"프로젝트별", up:"향후 일정", cal:"인원별 일정표"};
 function dashReport(){
   const ps = visProjects().filter(p => !rep.excl.has(p.id)).sort((a, b) => coName(a.coId).localeCompare(coName(b.coId)) || (a.period || "").localeCompare(b.period || ""));
@@ -1043,6 +1044,11 @@ function dashReport(){
       <td class="rn" style="font-weight:700">${tot.done}</td><td class="rn" style="font-weight:700">${tot.doing}</td>
       <td class="rn" style="font-weight:700;${tot.late ? "color:var(--danger)" : ""}">${tot.late}</td><td class="rn" style="font-weight:800;color:var(--brand)">${pct(tot)}%</td></tr>`;
 
+  const asgTable = p => { const list = asgRows(p); if (!list.length) return "";
+    const t = asgSum(list), hasNum = t.key + t.non > 0;
+    return `<table style="margin-bottom:8px"><thead><tr><th style="width:110px">담당자</th><th>배정업무</th>${hasNum ? `<th style="width:64px" class="rn">Key</th><th style="width:72px" class="rn">Non-key</th><th style="width:56px" class="rn">계</th>` : ""}<th style="width:28%">비고</th></tr></thead>
+      <tbody>${list.map(r => `<tr><td style="font-weight:600">${esc(r.owner || "–")}</td><td>${esc(r.work || "")}</td>${hasNum ? `<td class="rn">${r.key === "" || r.key === undefined ? "" : r.key}</td><td class="rn">${r.non === "" || r.non === undefined ? "" : r.non}</td><td class="rn" style="font-weight:700">${(+r.key || 0) + (+r.non || 0) || ""}</td>` : ""}<td class="sub2">${esc(r.memo || "")}</td></tr>`).join("")}
+      ${hasNum && list.length > 1 ? `<tr style="border-top:2px solid var(--rule)"><td style="font-weight:800">계</td><td class="sub2">${list.length}명</td><td class="rn" style="font-weight:700">${t.key}</td><td class="rn" style="font-weight:700">${t.non}</td><td class="rn" style="font-weight:800">${t.key + t.non}</td><td></td></tr>` : ""}</tbody></table>`; };
   const projBlock = p => {
     const k = cnt(p), steps = p.steps || [];
     const doneNames = steps.filter(s => stOf(s) === "done").map(s => s.name);
@@ -1064,6 +1070,7 @@ function dashReport(){
       <div class="now"><span>완료 <b>${k.done}/${k.all}</b>${doneNames.length ? ` <span class="sub2">(~${esc(doneNames[doneNames.length - 1])})</span>` : ""}</span>
         <span>진행중 <b>${runs.length ? esc(runs.map(s => s.name).join(", ")) : "없음"}</b></span>
         <span>투입인원 <b>${esc(projOwners(p).join(", ")) || "미배정"}</b></span></div>
+      ${asgTable(p)}
       ${rep.detail === "none" ? "" : shown.length ? `<table><thead><tr><th style="width:36px">순번</th><th>${rep.detail === "all" ? "단계" : "향후 단계"}</th><th style="width:110px">상태</th><th style="width:118px">일정</th><th style="width:190px">담당</th><th>비고</th></tr></thead><tbody>${rows}</tbody></table>`
                     : `<div class="sub2">모든 단계 완료</div>`}
     </div>`;
@@ -1132,6 +1139,7 @@ function dashReport(){
         ${opt("todo", "카드: 향후 단계만", rep.detail)}${opt("all", "카드: 전체 단계", rep.detail)}${opt("none", "카드: 요약줄만", rep.detail)}</select>
       <select id="repHorizon" class="fld" style="width:auto;font-size:12px;padding:5px 9px" title="향후 일정·일정표 범위">
         ${opt(0, "일정: 전체", rep.horizon)}${opt(1, "일정: 향후 1개월", rep.horizon)}${opt(3, "일정: 향후 3개월", rep.horizon)}${opt(6, "일정: 향후 6개월", rep.horizon)}${opt(12, "일정: 향후 12개월", rep.horizon)}</select>
+      <button class="chip ${rep.assign ? "on" : ""}" id="repAsg" title="프로젝트 카드에 담당자별 배정업무 표 포함 (프로젝트별 '보고서에 표기' 체크된 것만)">배정업무</button>
       <button class="btn ${rep.excl.size ? "primary" : ""}" id="repPick">프로젝트 선택${rep.excl.size ? ` (${ps.length}/${allVis.length})` : ""}</button>
       <div style="margin-left:auto;display:flex;gap:8px"><button class="btn" id="repXlsx">보고서 엑셀</button><button class="btn primary" id="repPrint">인쇄 · PDF 저장</button></div>
     </div>
@@ -1147,6 +1155,7 @@ function dashReport(){
   $("#repDetail").onchange = e => { rep.detail = e.target.value; dashReport(); };
   $("#repHorizon").onchange = e => { rep.horizon = +e.target.value; dashReport(); };
   $("#repPick").onclick = () => { rep.pick = !rep.pick; dashReport(); };
+  $("#repAsg").onclick = () => { rep.assign = !rep.assign; dashReport(); };
   $$(".pk").forEach(cb => cb.onchange = () => { cb.checked ? rep.excl.delete(cb.dataset.p) : rep.excl.add(cb.dataset.p); dashReport(); });
   const pa = $("#pkAll"), pnn = $("#pkNone");
   if (pa) pa.onclick = () => { rep.excl.clear(); dashReport(); };
@@ -1198,6 +1207,17 @@ function exportReport(ps, groups, up){
   const ws4 = mkSheet(a4, (R, C) => C === 2 ? ST.co : C === 6 ? cellStyle(meta4[R - 1]) : (C <= 1) ? ST.center : ST.base,
     [{wch:12},{wch:12},{wch:14},{wch:14},{wch:18},{wch:30},{wch:9},{wch:30},{wch:32}]);
   if (rep.sec.up){ XLSX.utils.book_append_sheet(wb, ws4, "향후일정"); sheets.push(2); }
+  /* 4-1) 담당자별 배정업무 */
+  if (rep.sec.proj){
+    const a6 = [["구분","회사","기수","담당자","배정업무","Key","Non-key","계","비고"]];
+    ps.forEach(p => asgRows(p).forEach(r => a6.push([catLabel(p), coName(p.coId), p.period || "", r.owner || "", r.work || "",
+      r.key === "" || r.key === undefined ? "" : +r.key, r.non === "" || r.non === undefined ? "" : +r.non, ((+r.key || 0) + (+r.non || 0)) || "", r.memo || ""])));
+    if (a6.length > 1){
+      const ws6 = mkSheet(a6, (R, C) => C === 1 ? ST.co : (C >= 5 && C <= 7) ? ST.center : ST.base,
+        [{wch:14},{wch:14},{wch:18},{wch:12},{wch:40},{wch:7},{wch:9},{wch:7},{wch:32}]);
+      XLSX.utils.book_append_sheet(wb, ws6, "담당자별배정"); sheets.push(3);
+    }
+  }
   /* 5) 인원별 캘린더 (월별 블록) */
   if (rep.sec.cal && up.length){
     const evs = up.map(({p, s, sc}) => ({p, s, start:sc.start, end:sc.end, tent:sc.tent, late:isLate(s), st:stOf(s)}));
@@ -1768,8 +1788,75 @@ function renderProj(){
         </div>
         <div class="hint">종료일만 입력하면 그날 하루짜리 일정으로 표시됩니다. 상태를 '진행중'으로 바꾸면 착수일이 기록되어 ${STALE_DAYS}일 이상 머물 때 정체 표시가 붙습니다.</div>
       </div>
-    </div>`;
+    </div>
+    ${assignCardHtml(p)}`;
   wireProj(p);
+  wireAssign(p);
+}
+
+/* ===== 담당자별 배정업무 ===== */
+const asgSum = list => list.reduce((a, r) => { a.key += +r.key || 0; a.non += +r.non || 0; return a; }, {key:0, non:0});
+function assignCardHtml(p){
+  const list = p.assign || [];
+  const t = asgSum(list);
+  const rows = list.map((r, i) => `<tr>
+      <td><input class="cell-in asg" data-i="${i}" data-f="owner" list="memList" value="${esc(r.owner || "")}" placeholder="담당자" style="min-width:90px"></td>
+      <td><input class="cell-in asg" data-i="${i}" data-f="work" value="${esc(r.work || "")}" placeholder="예: 매출·매출채권, 구매·지급 프로세스" style="min-width:220px;width:100%"></td>
+      <td><input class="cell-in asg num" data-i="${i}" data-f="key" type="number" min="0" value="${r.key ?? ""}" style="width:64px;text-align:right"></td>
+      <td><input class="cell-in asg num" data-i="${i}" data-f="non" type="number" min="0" value="${r.non ?? ""}" style="width:64px;text-align:right"></td>
+      <td class="rn" style="font-weight:700">${(+r.key || 0) + (+r.non || 0) || ""}</td>
+      <td><input class="cell-in asg" data-i="${i}" data-f="memo" value="${esc(r.memo || "")}" placeholder="비고" style="min-width:140px;width:100%"></td>
+      <td style="text-align:right"><button class="btn ghost" data-adel="${i}" title="삭제">✕</button></td></tr>`).join("");
+  return `<div class="card mt12" id="assignCard">
+    <div class="card-h"><h3>담당자별 배정업무</h3>
+      <span class="sub2">프로세스·통제수 등 세부 배정 (선택 입력)</span>
+      <label style="margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="asgShow" ${p.showAssign !== false ? "checked" : ""} style="accent-color:var(--brand)"> 보고서에 표기</label></div>
+    <datalist id="memList">${DB.members.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th style="width:120px">담당자</th><th>배정업무 (프로세스 등)</th><th style="width:76px;text-align:right">Key</th><th style="width:76px;text-align:right">Non-key</th><th style="width:60px;text-align:right">계</th><th>비고</th><th style="width:40px"></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="7"><div class="empty" style="padding:18px">배정업무가 없습니다. 아래에서 추가하세요.</div></td></tr>`}</tbody>
+      ${list.length ? `<tfoot><tr style="border-top:2px solid var(--rule)"><td style="font-weight:800">합계</td><td class="sub2">${list.length}명 배정</td><td class="rn" style="font-weight:700">${t.key || ""}</td><td class="rn" style="font-weight:700">${t.non || ""}</td><td class="rn" style="font-weight:800">${t.key + t.non || ""}</td><td colspan="2"></td></tr></tfoot>` : ""}
+    </table></div>
+    <div class="addbar">
+      <input id="newAsgOwner" class="fld" list="memList" placeholder="담당자" style="width:130px">
+      <input id="newAsgWork" class="fld" placeholder="배정업무 (예: 재무보고 프로세스)" style="flex:1;min-width:200px">
+      <input id="newAsgKey" class="fld" type="number" min="0" placeholder="Key" style="width:80px">
+      <input id="newAsgNon" class="fld" type="number" min="0" placeholder="Non-key" style="width:90px">
+      <button id="addAsg" class="btn primary">추가</button>
+    </div>
+    <div class="hint">통제수는 Key/Non-key를 각각 넣으면 계가 자동 계산됩니다. 숫자가 필요 없는 프로젝트(XBRL 등)는 배정업무만 적어도 됩니다.</div>
+  </div>`;
+}
+function wireAssign(p){
+  const list = p.assign || (p.assign = []);
+  const card = $("#assignCard"); if (!card) return;
+  const refreshSums = () => {
+    card.querySelectorAll("tbody tr").forEach((tr, i) => { const r = list[i]; if (!r) return; const td = tr.children[4]; if (td) td.textContent = (+r.key || 0) + (+r.non || 0) || ""; });
+    const t = asgSum(list), tf = card.querySelector("tfoot tr");
+    if (tf){ tf.children[2].textContent = t.key || ""; tf.children[3].textContent = t.non || ""; tf.children[4].textContent = t.key + t.non || ""; }
+  };
+  card.querySelectorAll("input.asg").forEach(el => el.addEventListener("input", () => {
+    const r = list[+el.dataset.i]; if (!r) return;
+    r[el.dataset.f] = el.type === "number" ? (el.value === "" ? "" : +el.value) : el.value;
+    refreshSums(); save(false);
+  }));
+  card.querySelectorAll("[data-adel]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.adel; if (!confirm(`「${list[i].owner || "(담당자 없음)"} — ${list[i].work || ""}」 배정을 삭제할까요?`)) return;
+    list.splice(i, 1); save(true); renderProj();
+  });
+  $("#asgShow").onchange = e => { p.showAssign = e.target.checked; save(true); };
+  const add = () => {
+    const owner = $("#newAsgOwner").value.trim(), work = $("#newAsgWork").value.trim();
+    if (!owner && !work){ toast("담당자 또는 배정업무를 입력하세요"); return; }
+    const k = $("#newAsgKey").value, n = $("#newAsgNon").value;
+    list.push({owner, work, key:k === "" ? "" : +k, non:n === "" ? "" : +n, memo:""});
+    if (owner && !DB.members.includes(owner)) DB.members.push(owner);
+    save(true); renderProj();
+    const w = $("#newAsgOwner"); if (w) w.focus();
+  };
+  $("#addAsg").onclick = add;
+  ["newAsgOwner", "newAsgWork", "newAsgKey", "newAsgNon"].forEach(id => $("#" + id).onkeydown = e => { if (e.key === "Enter") add(); });
 }
 
 function wireProj(p){
@@ -1854,7 +1941,7 @@ $("#addProj").onclick = () => {
   const coId = $("#npCo").value; if (!coId){ toast("회사를 먼저 등록하세요"); return; }
   const t = tplOf($("#npTpl").value);
   const base = $("#npBase").value || todayStr();
-  const p = {id:uid8(), coId, tplId:t ? t.id : "", cat:"", period:$("#npPeriod").value.trim(), steps:t ? buildSteps(t, base) : []};
+  const p = {id:uid8(), coId, tplId:t ? t.id : "", cat:"", period:$("#npPeriod").value.trim(), steps:t ? buildSteps(t, base) : [], assign:[], showAssign:true};
   DB.projects.push(p); selProj = p.id; $("#npPeriod").value = "";
   save(true); renderProj(); toast("프로젝트가 생성되었습니다");
 };
